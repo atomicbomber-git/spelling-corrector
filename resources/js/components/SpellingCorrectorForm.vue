@@ -2,48 +2,65 @@
     <div>
         <div class="card">
             <div class="card-body">
-                <label for="text">
-                    Teks
-                </label>
-                <textarea
-                    class="form-control"
-                    id="text"
-                    v-model="text"
-                    placeholder="Teks"
-                    rows="20"
-                ></textarea>
+
+                <form @submit.prevent="onFormSubmit">
+                    <div class="form-group">
+                        <label for="text">
+                            Teks
+                        </label>
+                        <textarea
+                            class="form-control"
+                            id="text"
+                            v-model="text"
+                            placeholder="Teks"
+                            rows="20"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group d-flex justify-content-end">
+                        <button class="btn btn-primary">
+                            Periksa Kesalahan Pengejaan
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <div class="card mt-3">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md">
+        <div class="row mt-3" v-if="this.tokens.length !== 0">
+
+            <div style="font-size: 14pt" class="card col-md">
+                <div class="card-body">
                     <span v-for="token in tokens"
                           @click="onTokenClick(token)"
                           class="mx-1"
                           :class="{
                             'badge': token.incorrect,
-                            'badge-danger': token.incorrect && token.pickedCorrection === null,
-                            'badge-success': token.incorrect && token.pickedCorrection !== null,
+                            'badge-info': token.incorrect && token.id === get(selectedToken, 'id', false),
+                            'badge-danger': token.incorrect && token.pickedCorrection === null && token.id !== get(selectedToken, 'id', false),
+                            'badge-success': token.incorrect && token.pickedCorrection !== null && token.id !== get(selectedToken, 'id', false),
                       }"
+                          of
                     > {{ tokenDisplay(token) }} </span>
-                    </div>
+                </div>
+            </div>
 
-                    <div v-if="selectedToken !== null"
-                         class="col-md-3">
-                        <h5> Koreksi untuk "{{ selectedToken.cleaned }}"</h5>
+            <div class="card col-md-3" v-if="selectedToken !== null">
+                <div class="card-body">
+                    <h5> Koreksi untuk "{{ selectedToken.cleaned }}"</h5>
 
-                        <ul class="list-group">
-                            <li
-                                @click="onCorrectionOptionClick(correction)"
-                                class="list-group-item list-group-item-action"
-                                :class="{ active: selectedToken.pickedCorrection === correction}"
-                                v-for="correction in selectedToken.corrections"
-                            > {{ correction }}
-                            </li>
-                        </ul>
-                    </div>
+                    <button @click="onRevertButtonClick" class="d-block btn btn-dark btn-sm">
+                        Kembalikan ke Bentuk Semula
+                    </button>
+
+                    <ul class="list-group">
+                        <li
+                            @click="onCorrectionOptionClick(correction)"
+                            class="list-group-item list-group-item-action"
+                            :class="{ active: selectedToken.pickedCorrection === correction}"
+                            v-for="correction in selectedToken.corrections"
+                        > {{ correction }}
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -51,7 +68,8 @@
 </template>
 
 <script>
-    import {debounce} from 'lodash'
+    import Swal from 'sweetalert2'
+    import { get } from 'lodash'
 
     export default {
         data() {
@@ -63,13 +81,32 @@
         },
 
         methods: {
+            get: get,
+            onFormSubmit() {
+                this.provideCorrections(this.text)
+            },
+
             tokenDisplay(token) {
                 if (token.pickedCorrection === null) {
                     return token.original
                 }
 
-                return token.original.toLowerCase()
-                    .replace(token.cleaned, token.pickedCorrection)
+                let uppercaseMask = []
+                for (let i = 0; i < token.original.length; ++i) {
+                    uppercaseMask.push(
+                        token.original[i] === token.original[i].toUpperCase()
+                    )
+                }
+
+                let replaced = token.original.toLowerCase().replace(token.cleaned, token.pickedCorrection)
+                let result = ""
+
+                for (let i = 0; i < replaced.length; ++i) {
+                    result += (uppercaseMask[i] ?? false) ?
+                        replaced[i].toUpperCase() : replaced[i]
+                }
+
+                return result
             },
 
             onTokenClick(token) {
@@ -80,6 +117,10 @@
                 }
             },
 
+            onRevertButtonClick() {
+                this.selectedToken.pickedCorrection = null
+            },
+
             onCorrectionOptionClick(correction) {
                 this.tokens = this.tokens.map(tok => {
                     if (this.selectedToken.id === tok.id) {
@@ -88,13 +129,16 @@
                     }
                     return tok;
                 })
-            }
-        },
+            },
 
-        watch: {
-            text: debounce(function (text) {
-                axios.post("/", {text: text})
+            provideCorrections(text) {
+                Swal.showLoading()
+
+                axios.post('/', {text: text})
                     .then(response => {
+                        Swal.close()
+                        Swal.hideLoading()
+
                         this.tokens = response.data.map((token, index) => ({
                             ...token,
                             id: index,
@@ -102,9 +146,12 @@
                         }))
                     })
                     .catch(error => {
+                        Swal.close()
+                        Swal.hideLoading()
+
                         console.log(error)
                     })
-            }, 400)
-        }
+            }
+        },
     }
 </script>
