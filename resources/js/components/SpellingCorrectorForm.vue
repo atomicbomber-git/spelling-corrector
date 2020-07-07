@@ -1,18 +1,19 @@
 <template>
     <div>
+        <h1> Korektor Ejaan</h1>
+
         <div class="card">
             <div class="card-body">
-
                 <form @submit.prevent="onFormSubmit">
                     <div class="form-group">
                         <label for="text">
-                            Teks
+                            Teks untuk Diperiksa:
                         </label>
                         <textarea
                             class="form-control"
                             id="text"
                             v-model="text"
-                            placeholder="Teks"
+                            placeholder="Masukkan teks yang hendak diperiksa disini"
                             rows="20"
                         ></textarea>
                     </div>
@@ -26,41 +27,45 @@
             </div>
         </div>
 
-        <div class="row mt-3" v-if="this.tokens.length !== 0">
-
-            <div style="font-size: 14pt" class="card col-md">
-                <div class="card-body">
+        <div>
+            <div class="row mt-3"
+                 v-if="this.tokens.length !== 0">
+                <div style="font-size: 14pt"
+                     class="card col-md-9">
+                    <div class="card-body">
                     <span v-for="token in tokens"
                           @click="onTokenClick(token)"
-                          class="mx-1"
                           :class="{
                             'badge': token.incorrect,
                             'badge-info': token.incorrect && token.id === get(selectedToken, 'id', false),
                             'badge-danger': token.incorrect && token.pickedCorrection === null && token.id !== get(selectedToken, 'id', false),
                             'badge-success': token.incorrect && token.pickedCorrection !== null && token.id !== get(selectedToken, 'id', false),
                       }"
-                          of
                     > {{ tokenDisplay(token) }} </span>
+                    </div>
                 </div>
-            </div>
 
-            <div class="card col-md-3" v-if="selectedToken !== null">
-                <div class="card-body">
-                    <h5> Koreksi untuk "{{ selectedToken.cleaned }}"</h5>
+                <div class="card col-md-3">
+                    <div class="card-body">
+                        <template v-if="selectedToken !== null">
+                            <h5> Koreksi untuk "{{ selectedToken.cleaned }}"</h5>
 
-                    <button @click="onRevertButtonClick" class="d-block btn btn-dark btn-sm">
-                        Kembalikan ke Bentuk Semula
-                    </button>
+                            <button @click="onRevertButtonClick"
+                                    class="d-block w-100 btn btn-dark btn-sm my-1">
+                                Kembalikan ke Bentuk Semula
+                            </button>
 
-                    <ul class="list-group">
-                        <li
-                            @click="onCorrectionOptionClick(correction)"
-                            class="list-group-item list-group-item-action"
-                            :class="{ active: selectedToken.pickedCorrection === correction}"
-                            v-for="correction in selectedToken.corrections"
-                        > {{ correction }}
-                        </li>
-                    </ul>
+                            <ul class="list-group">
+                                <li
+                                    @click="onCorrectionOptionClick(correction)"
+                                    class="list-group-item list-group-item-action"
+                                    :class="{ active: selectedToken.pickedCorrection === correction}"
+                                    v-for="correction in selectedToken.corrections"
+                                > {{ correction }}
+                                </li>
+                            </ul>
+                        </template>
+                    </div>
                 </div>
             </div>
         </div>
@@ -69,7 +74,7 @@
 
 <script>
     import Swal from 'sweetalert2'
-    import { get } from 'lodash'
+    import {get} from 'lodash'
 
     export default {
         data() {

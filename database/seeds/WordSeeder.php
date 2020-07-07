@@ -1,10 +1,8 @@
 <?php
 
-use App\Support\PdfImporter;
+use App\Word;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use TextAnalysis\Tokenizers\GeneralTokenizer;
 
 class WordSeeder extends Seeder
 {
@@ -23,18 +21,16 @@ class WordSeeder extends Seeder
 
         while (!feof($file) && ($raw = fgetcsv($file))) {
             $word = trim($raw[0]);
-
             $buffer[] = ["content" => $word];
 
             if (count($buffer) > 1000) {
-                DB::table((new \App\Word)->getTable())->insertOrIgnore(
+                DB::table((new Word)->getTable())->insertOrIgnore(
                     $buffer
                 );
 
                 $buffer = [];
                 $count = 0;
-            }
-            else {
+            } else {
                 ++$count;
             }
         }

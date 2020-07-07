@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\SpellingCorrectorFormController;
+use App\Http\Controllers\SpellingCorrectorProcessController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,5 +15,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get("/", class_basename(\App\Http\Controllers\SpellingCorrectorFormController::class));
-Route::post("/", class_basename(\App\Http\Controllers\SpellingCorrectorProcessController::class));
+\Illuminate\Support\Facades\Auth::routes([
+    "login"
+]);
+
+Route::get("/", class_basename(SpellingCorrectorFormController::class));
+Route::post("/", class_basename(SpellingCorrectorProcessController::class));

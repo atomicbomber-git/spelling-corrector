@@ -1987,6 +1987,11 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 //
 //
 //
+//
+//
+//
+//
+//
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -40808,6 +40813,8 @@ var render = function() {
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
   return _c("div", [
+    _c("h1", [_vm._v(" Korektor Ejaan")]),
+    _vm._v(" "),
     _c("div", { staticClass: "card" }, [
       _c("div", { staticClass: "card-body" }, [
         _c(
@@ -40823,7 +40830,9 @@ var render = function() {
           [
             _c("div", { staticClass: "form-group" }, [
               _c("label", { attrs: { for: "text" } }, [
-                _vm._v("\n                        Teks\n                    ")
+                _vm._v(
+                  "\n                        Teks untuk Diperiksa:\n                    "
+                )
               ]),
               _vm._v(" "),
               _c("textarea", {
@@ -40836,7 +40845,11 @@ var render = function() {
                   }
                 ],
                 staticClass: "form-control",
-                attrs: { id: "text", placeholder: "Teks", rows: "20" },
+                attrs: {
+                  id: "text",
+                  placeholder: "Masukkan teks yang hendak diperiksa disini",
+                  rows: "20"
+                },
                 domProps: { value: _vm.text },
                 on: {
                   input: function($event) {
@@ -40855,108 +40868,126 @@ var render = function() {
       ])
     ]),
     _vm._v(" "),
-    this.tokens.length !== 0
-      ? _c("div", { staticClass: "row mt-3" }, [
-          _c(
-            "div",
-            {
-              staticClass: "card col-md",
-              staticStyle: { "font-size": "14pt" }
-            },
-            [
+    _c("div", [
+      this.tokens.length !== 0
+        ? _c("div", { staticClass: "row mt-3" }, [
+            _c(
+              "div",
+              {
+                staticClass: "card col-md-9",
+                staticStyle: { "font-size": "14pt" }
+              },
+              [
+                _c(
+                  "div",
+                  { staticClass: "card-body" },
+                  _vm._l(_vm.tokens, function(token) {
+                    return _c(
+                      "span",
+                      {
+                        class: {
+                          badge: token.incorrect,
+                          "badge-info":
+                            token.incorrect &&
+                            token.id ===
+                              _vm.get(_vm.selectedToken, "id", false),
+                          "badge-danger":
+                            token.incorrect &&
+                            token.pickedCorrection === null &&
+                            token.id !==
+                              _vm.get(_vm.selectedToken, "id", false),
+                          "badge-success":
+                            token.incorrect &&
+                            token.pickedCorrection !== null &&
+                            token.id !== _vm.get(_vm.selectedToken, "id", false)
+                        },
+                        on: {
+                          click: function($event) {
+                            return _vm.onTokenClick(token)
+                          }
+                        }
+                      },
+                      [_vm._v(" " + _vm._s(_vm.tokenDisplay(token)) + " ")]
+                    )
+                  }),
+                  0
+                )
+              ]
+            ),
+            _vm._v(" "),
+            _c("div", { staticClass: "card col-md-3" }, [
               _c(
                 "div",
                 { staticClass: "card-body" },
-                _vm._l(_vm.tokens, function(token) {
-                  return _c(
-                    "span",
-                    {
-                      staticClass: "mx-1",
-                      class: {
-                        badge: token.incorrect,
-                        "badge-info":
-                          token.incorrect &&
-                          token.id === _vm.get(_vm.selectedToken, "id", false),
-                        "badge-danger":
-                          token.incorrect &&
-                          token.pickedCorrection === null &&
-                          token.id !== _vm.get(_vm.selectedToken, "id", false),
-                        "badge-success":
-                          token.incorrect &&
-                          token.pickedCorrection !== null &&
-                          token.id !== _vm.get(_vm.selectedToken, "id", false)
-                      },
-                      attrs: { of: "" },
-                      on: {
-                        click: function($event) {
-                          return _vm.onTokenClick(token)
-                        }
-                      }
-                    },
-                    [_vm._v(" " + _vm._s(_vm.tokenDisplay(token)) + " ")]
-                  )
-                }),
-                0
-              )
-            ]
-          ),
-          _vm._v(" "),
-          _vm.selectedToken !== null
-            ? _c("div", { staticClass: "card col-md-3" }, [
-                _c("div", { staticClass: "card-body" }, [
-                  _c("h5", [
-                    _vm._v(
-                      ' Koreksi untuk "' +
-                        _vm._s(_vm.selectedToken.cleaned) +
-                        '"'
-                    )
-                  ]),
-                  _vm._v(" "),
-                  _c(
-                    "button",
-                    {
-                      staticClass: "d-block btn btn-dark btn-sm",
-                      on: { click: _vm.onRevertButtonClick }
-                    },
-                    [
-                      _vm._v(
-                        "\n                    Kembalikan ke Bentuk Semula\n                "
-                      )
-                    ]
-                  ),
-                  _vm._v(" "),
-                  _c(
-                    "ul",
-                    { staticClass: "list-group" },
-                    _vm._l(_vm.selectedToken.corrections, function(correction) {
-                      return _c(
-                        "li",
-                        {
-                          staticClass: "list-group-item list-group-item-action",
-                          class: {
-                            active:
-                              _vm.selectedToken.pickedCorrection === correction
-                          },
-                          on: {
-                            click: function($event) {
-                              return _vm.onCorrectionOptionClick(correction)
-                            }
-                          }
-                        },
-                        [
+                [
+                  _vm.selectedToken !== null
+                    ? [
+                        _c("h5", [
                           _vm._v(
-                            " " + _vm._s(correction) + "\n                    "
+                            ' Koreksi untuk "' +
+                              _vm._s(_vm.selectedToken.cleaned) +
+                              '"'
                           )
-                        ]
-                      )
-                    }),
-                    0
-                  )
-                ])
-              ])
-            : _vm._e()
-        ])
-      : _vm._e()
+                        ]),
+                        _vm._v(" "),
+                        _c(
+                          "button",
+                          {
+                            staticClass:
+                              "d-block w-100 btn btn-dark btn-sm my-1",
+                            on: { click: _vm.onRevertButtonClick }
+                          },
+                          [
+                            _vm._v(
+                              "\n                            Kembalikan ke Bentuk Semula\n                        "
+                            )
+                          ]
+                        ),
+                        _vm._v(" "),
+                        _c(
+                          "ul",
+                          { staticClass: "list-group" },
+                          _vm._l(_vm.selectedToken.corrections, function(
+                            correction
+                          ) {
+                            return _c(
+                              "li",
+                              {
+                                staticClass:
+                                  "list-group-item list-group-item-action",
+                                class: {
+                                  active:
+                                    _vm.selectedToken.pickedCorrection ===
+                                    correction
+                                },
+                                on: {
+                                  click: function($event) {
+                                    return _vm.onCorrectionOptionClick(
+                                      correction
+                                    )
+                                  }
+                                }
+                              },
+                              [
+                                _vm._v(
+                                  " " +
+                                    _vm._s(correction) +
+                                    "\n                            "
+                                )
+                              ]
+                            )
+                          }),
+                          0
+                        )
+                      ]
+                    : _vm._e()
+                ],
+                2
+              )
+            ])
+          ])
+        : _vm._e()
+    ])
   ])
 }
 var staticRenderFns = [
