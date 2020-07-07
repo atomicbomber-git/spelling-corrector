@@ -1,10 +1,9 @@
 <?php
 
-use App\Word;
+use App\Support\PdfImporter;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Spatie\PdfToText\Pdf;
 use TextAnalysis\Tokenizers\GeneralTokenizer;
 
 class WordSeeder extends Seeder
@@ -16,28 +15,27 @@ class WordSeeder extends Seeder
      */
     public function run()
     {
-        $directoryPath = __DIR__ . DIRECTORY_SEPARATOR . "pdfs";
-        $pdfDirectoryContents = scandir($directoryPath);
-        $tokenizer = new GeneralTokenizer();
-
+        $file = fopen(__DIR__ . "/data/data.csv", "r");
         DB::beginTransaction();
 
-        foreach ($pdfDirectoryContents as $pdfDirectoryContent) {
-            if (Str::endsWith($pdfDirectoryContent, ".pdf")) {
-                $text = Pdf::getText($directoryPath . DIRECTORY_SEPARATOR . $pdfDirectoryContent);
-                $tokens = $tokenizer->tokenize($text);
-                $tokens = array_filter($tokens, fn ($token) => ctype_alpha($token));
-                $tokens = array_map(fn ($token) => strtolower($token), $tokens);
-                $datetime = now();
+        $count = 0;
+        $buffer = [];
 
-                DB::table((new Word)->getTable())
-                    ->insertOrIgnore(
-                        array_map(fn ($token) => [
-                            "content" => $token,
-                            "created_at" => $datetime,
-                            "updated_at" => $datetime,
-                        ], $tokens)
-                    );
+        while (!feof($file) && ($raw = fgetcsv($file))) {
+            $word = trim($raw[0]);
+
+            $buffer[] = ["content" => $word];
+
+            if (count($buffer) > 1000) {
+                DB::table((new \App\Word)->getTable())->insertOrIgnore(
+                    $buffer
+                );
+
+                $buffer = [];
+                $count = 0;
+            }
+            else {
+                ++$count;
             }
         }
 

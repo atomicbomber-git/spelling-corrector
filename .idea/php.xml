@@ -114,6 +114,13 @@
       <path value="$PROJECT_DIR$/vendor/sastrawi/sastrawi" />
       <path value="$PROJECT_DIR$/vendor/laravel/homestead" />
       <path value="$PROJECT_DIR$/vendor/vanderlee/php-sentence" />
+      <path value="$PROJECT_DIR$/vendor/container-interop/container-interop" />
+      <path value="$PROJECT_DIR$/vendor/sastrawi/string-span" />
+      <path value="$PROJECT_DIR$/vendor/sastrawi/tokenizer" />
+      <path value="$PROJECT_DIR$/vendor/sastrawi/trka" />
+      <path value="$PROJECT_DIR$/vendor/zendframework/zend-validator" />
+      <path value="$PROJECT_DIR$/vendor/zendframework/zend-stdlib" />
+      <path value="$PROJECT_DIR$/vendor/zendframework/zend-uri" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="7.4" />
