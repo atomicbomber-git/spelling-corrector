@@ -18,7 +18,7 @@ class PdfImporter
         $this->tokenizer = $tokenizer;
     }
 
-    public function import(string $filePath): void
+    public function import(string $filePath): int
     {
         $text = Pdf::getText($filePath);
         $tokens = $this->tokenizer->tokenize($text);
@@ -26,7 +26,7 @@ class PdfImporter
         $tokens = array_map(fn($token) => strtolower($token), $tokens);
         $datetime = now();
 
-        DB::table((new Word())->getTable())
+        return DB::table((new Word())->getTable())
             ->insertOrIgnore(
                 array_map(fn($token) => [
                     "content" => $token,

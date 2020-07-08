@@ -8,4 +8,5 @@ class Word extends Model
 {
     protected $primaryKey = "content";
     public $incrementing = false;
+    protected $perPage = 45;
 }
