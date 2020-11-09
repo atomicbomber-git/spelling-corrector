@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ImportWordsFromDocumentController;
 use App\Http\Controllers\SpellingCorrectorFormController;
 use App\Http\Controllers\SpellingCorrectorProcessController;
 use App\Http\Controllers\WordController;
@@ -24,5 +25,5 @@ Auth::routes([
 Route::get("/", class_basename(SpellingCorrectorFormController::class));
 Route::post("/", class_basename(SpellingCorrectorProcessController::class));
 Route::resource("/word", class_basename(WordController::class));
-Route::post("/import-words-from-document", class_basename(\App\Http\Controllers\ImportWordsFromDocumentController::class))
+Route::post("/import-words-from-document", class_basename(ImportWordsFromDocumentController::class))
     ->name("import-words-from-document");
