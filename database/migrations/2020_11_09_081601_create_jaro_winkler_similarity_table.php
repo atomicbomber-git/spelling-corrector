@@ -28,16 +28,16 @@ class CreateJaroWinklerSimilarityTable extends Migration
             $table->index(["word_a", "similaritas"]);
         });
 
-        DB::unprepared("DROP TRIGGER IF EXISTS TR_similaritas_jaro_winkler");
-
-        DB::unprepared(<<<HERE
-CREATE TRIGGER TR_similaritas_jaro_winkler AFTER INSERT ON words
-    INSERT INTO similaritas_jaro_winkler (
-    
-    
-    )
-HERE
-);
+//        DB::unprepared("DROP TRIGGER IF EXISTS TR_similaritas_jaro_winkler");
+//
+//        DB::unprepared(<<<HERE
+//CREATE TRIGGER TR_similaritas_jaro_winkler AFTER INSERT ON words
+//    INSERT INTO similaritas_jaro_winkler (
+//
+//
+//    )
+//HERE
+//);
 
 
     }
