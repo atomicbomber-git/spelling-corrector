@@ -26,16 +26,40 @@ class NgramFrequencySeeder extends Seeder
                 continue;
             }
 
-//            $filepath =
+            $this->command->info("Load ngram dari {$sentence_file}.");
 
-            $file = file_get_contents("{$sentence_files_root_dir}/{$sentence_file}");
+            $filepath = "{$sentence_files_root_dir}/{$sentence_file}";
+            $file_handle = fopen($filepath, "r");
 
+            DB::beginTransaction();
 
+            if ($file_handle) {
+                while (($line = fgets($file_handle)) !== false) {
 
+                    $words = explode(' ', $line);
 
+                    for ($i = 0; $i < count($words) + 2; ++$i) {
+                        $ngramFrequency = NgramFrequency::query()->firstOrNew([
+                            "word1" => $words[$i - 2] ?? "<EMPTY>",
+                            "word2" => $words[$i - 1] ?? "<EMPTY>",
+                            "word3" => $words[$i - 0] ?? "<EMPTY>",
+                        ]);
+
+                        if (!$ngramFrequency->exists) {
+                            $ngramFrequency->fill([
+                                "frequency" => 1,
+                            ])->save();
+                        }
+                        else {
+                            $ngramFrequency->increment("frequency");
+                        }
+                    }
+                }
+            } else {
+                $this->command->error("Error opening {$filepath}.");
+            }
+
+            DB::commit();
         }
-
-
-
     }
 }
