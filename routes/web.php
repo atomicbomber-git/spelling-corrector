@@ -25,5 +25,4 @@ Auth::routes([
 Route::get("/", class_basename(SpellingCorrectorFormController::class));
 Route::post("/", class_basename(SpellingCorrectorProcessController::class));
 Route::resource("/word", class_basename(WordController::class));
-Route::post("/import-words-from-document", class_basename(ImportWordsFromDocumentController::class))
-    ->name("import-words-from-document");
+Route::post("/import-words-from-document", class_basename(ImportWordsFromDocumentController::class))->name("import-words-from-document");
