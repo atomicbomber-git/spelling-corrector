@@ -20,10 +20,22 @@ class NgramAndWordSeeder extends Seeder
 
         $sentence_files_root_dir = database_path("seeders/sentences");
         $sentence_filenames = scandir($sentence_files_root_dir);
+
+        $ngram_frequencies = $this->getNgramFrequencies($sentence_filenames, $sentence_files_root_dir);
+        $flattened_ngram_frequency_values = $this->getFlattenedNgramFrequencyValues($ngram_frequencies);
+        $this->storeNgramFrequenciesToDatabase($flattened_ngram_frequency_values);
+    }
+
+    /**
+     * @param array $sentence_filenames
+     * @param string $sentence_files_root_dir
+     * @return array
+     */
+    public function getNgramFrequencies(array $sentence_filenames, string $sentence_files_root_dir): array
+    {
         $ngram_frequencies = [];
 
         $this->command->line("Loading data dari file teks kalimat.");
-
 
         $fileload_progress_bar = $this->createProgressBar($sentence_filenames);
 
@@ -67,22 +79,47 @@ class NgramAndWordSeeder extends Seeder
         }
 
         $fileload_progress_bar->finish();
+        return $ngram_frequencies;
+    }
 
+    /**
+     * @param array $sentence_filenames
+     * @return ProgressBar
+     */
+    public function createProgressBar(array $sentence_filenames): ProgressBar
+    {
+        $progress_bar = $this->command->getOutput()->createProgressBar(count($sentence_filenames));
+        $progress_bar->setFormat("%current%/%max% [%bar%] %percent:3s%%\n%message%\n");
+        return $progress_bar;
+    }
 
+    /**
+     * @param array $ngram_frequencies
+     * @return array
+     */
+    public function getFlattenedNgramFrequencyValues(array $ngram_frequencies): array
+    {
         $flattened_ngram_frequency_values = [];
-        foreach ($ngram_frequencies as $word1 => $word1_subs) {
-            foreach ($word1_subs as $word2 => $word2_subs) {
-                foreach ($word2_subs as $word3 => $frequency) {
+        foreach ($ngram_frequencies as $w1 => $word1_subs) {
+            foreach ($word1_subs as $w2 => $word2_subs) {
+                foreach ($word2_subs as $w3 => $frequency) {
                     $flattened_ngram_frequency_values[] = [
-                        "word1" => $word1 != "" ? $word1 : null,
-                        "word2" => $word2 != "" ? $word2 : null,
-                        "word3" => $word3 != "" ? $word3 : null,
+                        "word1" => $w1 != "" ? $w1 : null,
+                        "word2" => $w2 != "" ? $w2 : null,
+                        "word3" => $w3 != "" ? $w3 : null,
                         "frequency" => $frequency,
                     ];
                 }
             }
         }
+        return $flattened_ngram_frequency_values;
+    }
 
+    /**
+     * @param array $flattened_ngram_frequency_values
+     */
+    public function storeNgramFrequenciesToDatabase(array $flattened_ngram_frequency_values): void
+    {
         $chunk_size = 5000;
         $frequency_chunk_list = array_chunk($flattened_ngram_frequency_values, $chunk_size);
         $database_load_progressbar = $this->createProgressBar($frequency_chunk_list);
@@ -102,16 +139,5 @@ class NgramAndWordSeeder extends Seeder
         }
 
         $database_load_progressbar->finish();
-    }
-
-    /**
-     * @param array $sentence_filenames
-     * @return ProgressBar
-     */
-    public function createProgressBar(array $sentence_filenames): ProgressBar
-    {
-        $progress_bar = $this->command->getOutput()->createProgressBar(count($sentence_filenames));
-        $progress_bar->setFormat("%current%/%max% [%bar%] %percent:3s%%\n%message%\n");
-        return $progress_bar;
     }
 }
