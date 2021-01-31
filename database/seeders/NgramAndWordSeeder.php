@@ -1,12 +1,11 @@
 <?php
 
+namespace Database\Seeders;
+
 use App\NgramFrequency;
-use App\Support\LazySentenceTokenizer;
-use App\Support\Ngram;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\LazyCollection;
-use TextAnalysis\Tokenizers\SentenceTokenizer;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class NgramAndWordSeeder extends Seeder
 {
@@ -19,16 +18,21 @@ class NgramAndWordSeeder extends Seeder
     {
         NgramFrequency::query()->delete();
 
-        $sentence_files_root_dir = database_path("seeds/sentences");
+        $sentence_files_root_dir = database_path("seeders/sentences");
         $sentence_filenames = scandir($sentence_files_root_dir);
         $ngram_frequencies = [];
+
+        $this->command->line("Loading data dari file teks kalimat.");
+
+
+        $fileload_progress_bar = $this->createProgressBar($sentence_filenames);
 
         foreach ($sentence_filenames as $sentence_file) {
             if (in_array($sentence_file, [".", ".."])) {
                 continue;
             }
 
-            $this->command->info("Load kalimat dari {$sentence_file}.");
+            $fileload_progress_bar->setMessage("Load berkas " . $sentence_file);
 
             $filepath = "{$sentence_files_root_dir}/{$sentence_file}";
             $file_handle = fopen($filepath, "r");
@@ -57,8 +61,13 @@ class NgramAndWordSeeder extends Seeder
             } else {
                 $this->command->error("Error opening {$filepath}.");
             }
+
+            $fileload_progress_bar->advance();
             DB::commit();
         }
+
+        $fileload_progress_bar->finish();
+
 
         $flattened_ngram_frequency_values = [];
         foreach ($ngram_frequencies as $word1 => $word1_subs) {
@@ -75,8 +84,11 @@ class NgramAndWordSeeder extends Seeder
         }
 
         $chunk_size = 5000;
+        $frequency_chunk_list = array_chunk($flattened_ngram_frequency_values, $chunk_size);
+        $database_load_progressbar = $this->createProgressBar($frequency_chunk_list);
+
         foreach (array_chunk($flattened_ngram_frequency_values, $chunk_size) as $index => $frequency_chunks) {
-            $this->command->info(sprintf(
+            $database_load_progressbar->setMessage(sprintf(
                 "Memasukkan data ke %d-%d.",
                 $index * $chunk_size + 1,
                 ($index + 1) * $chunk_size,
@@ -85,6 +97,21 @@ class NgramAndWordSeeder extends Seeder
             DB::table("ngram_frequencies")->insert(
                 $frequency_chunks
             );
+
+            $database_load_progressbar->advance();
         }
+
+        $database_load_progressbar->finish();
+    }
+
+    /**
+     * @param array $sentence_filenames
+     * @return ProgressBar
+     */
+    public function createProgressBar(array $sentence_filenames): ProgressBar
+    {
+        $progress_bar = $this->command->getOutput()->createProgressBar(count($sentence_filenames));
+        $progress_bar->setFormat("%current%/%max% [%bar%] %percent:3s%%\n%message%\n");
+        return $progress_bar;
     }
 }

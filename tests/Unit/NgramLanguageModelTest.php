@@ -18,7 +18,7 @@ class NgramLanguageModelTest extends TestCase
      */
     public function testCreateLanguageModel()
     {
-        $filePath = __DIR__ . "/../../database/seeds/data/abstract.txt";
+        $filePath = __DIR__ . "/../../database/seeders/data/abstract.txt";
         $fileHandle = fopen($filePath, "r");
 
 
