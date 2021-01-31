@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\LazyCollection;
 use TextAnalysis\Tokenizers\SentenceTokenizer;
 
-const N_OF_GRAMS = 3;
-class NgramFrequencySeeder extends Seeder
+class NgramAndWordSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -29,7 +28,7 @@ class NgramFrequencySeeder extends Seeder
                 continue;
             }
 
-            $this->command->info("Load ngram dari {$sentence_file}.");
+            $this->command->info("Load kalimat dari {$sentence_file}.");
 
             $filepath = "{$sentence_files_root_dir}/{$sentence_file}";
             $file_handle = fopen($filepath, "r");
