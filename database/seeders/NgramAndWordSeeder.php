@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\NgramFrequency;
+use App\Word;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -21,19 +22,8 @@ class NgramAndWordSeeder extends Seeder
         $sentence_files_root_dir = database_path("seeders/sentences");
         $sentence_filenames = scandir($sentence_files_root_dir);
 
-        $ngram_frequencies = $this->getNgramFrequencies($sentence_filenames, $sentence_files_root_dir);
-        $flattened_ngram_frequency_values = $this->getFlattenedNgramFrequencyValues($ngram_frequencies);
-        $this->storeNgramFrequenciesToDatabase($flattened_ngram_frequency_values);
-    }
-
-    /**
-     * @param array $sentence_filenames
-     * @param string $sentence_files_root_dir
-     * @return array
-     */
-    public function getNgramFrequencies(array $sentence_filenames, string $sentence_files_root_dir): array
-    {
         $ngram_frequencies = [];
+        $dictionary = [];
 
         $this->command->line("Loading data dari file teks kalimat.");
 
@@ -59,6 +49,11 @@ class NgramAndWordSeeder extends Seeder
 
                     $words = explode(' ', $line);
 
+                    foreach ($words as $word) {
+                        $dictionary[$word] ??= 0;
+                        ++$dictionary[$word];
+                    }
+
                     for ($i = 0; $i < count($words) + 2; ++$i) {
                         $word1 = ($words[$i - 2] ?? null);
                         $word2 = ($words[$i - 1] ?? null);
@@ -67,7 +62,7 @@ class NgramAndWordSeeder extends Seeder
                         $ngram_frequencies[$word1] ??= [];
                         $ngram_frequencies[$word1][$word2] ??= [];
                         $ngram_frequencies[$word1][$word2][$word3] ??= 0;
-                        $ngram_frequencies[$word1][$word2][$word3]++;
+                        ++$ngram_frequencies[$word1][$word2][$word3];
                     }
                 }
             } else {
@@ -78,9 +73,26 @@ class NgramAndWordSeeder extends Seeder
             DB::commit();
         }
 
+
+        $words = array_filter($dictionary, fn ($frequency, $word) => $frequency > 2, ARRAY_FILTER_USE_BOTH);
+        $words = array_filter($words, fn ($word) => strlen($word) > 1 && $this->digit_ratio($word) < 0.2, ARRAY_FILTER_USE_KEY);
+        $words = array_map(fn ($word) => ["content" => $word], array_keys($words));
+
+        Word::query()->insert($words);
+
         $fileload_progress_bar->finish();
-        return $ngram_frequencies;
+        $flattened_ngram_frequency_values = $this->getFlattenedNgramFrequencyValues($ngram_frequencies);
+        $this->storeNgramFrequenciesToDatabase($flattened_ngram_frequency_values);
     }
+
+    function digit_ratio($text): float|int
+    {
+        $text_len = strlen($text);
+        return
+            ($text_len - strlen(preg_replace("/\d+/", "", $text)))
+            / $text_len;
+    }
+
 
     /**
      * @param array $sentence_filenames
