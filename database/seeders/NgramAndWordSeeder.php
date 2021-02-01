@@ -84,7 +84,7 @@ class NgramAndWordSeeder extends Seeder
         $this->storeNgramFrequenciesToDatabase($flattened_ngram_frequency_values);
     }
 
-    function digit_ratio($text): float|int
+    function digit_ratio($text)
     {
         $text_len = strlen($text);
         return
