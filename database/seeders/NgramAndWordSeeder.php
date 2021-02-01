@@ -73,7 +73,6 @@ class NgramAndWordSeeder extends Seeder
             DB::commit();
         }
 
-
         $words = array_filter($dictionary, fn ($frequency, $word) => $frequency > 2, ARRAY_FILTER_USE_BOTH);
         $words = array_filter($words, fn ($word) => strlen($word) > 1 && $this->digit_ratio($word) < 0.2, ARRAY_FILTER_USE_KEY);
         $words = array_map(fn ($word) => ["content" => $word], array_keys($words));

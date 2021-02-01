@@ -15,8 +15,6 @@
         "spatie/pdf-to-text": "^1.3",
         "yooper/php-text-analysis": "^1.5",
         "php": "^7.4",
-        "ext-intl": "*",
-        "ext-json": "*",
         "doctrine/dbal": "^3.0",
         "fideloper/proxy": "^4.2",
         "fruitcake/laravel-cors": "^2.0",

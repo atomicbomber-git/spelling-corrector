@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\NgramFrequency;
 use App\Support\SimilarityCalculator;
 use App\Word;
 use Illuminate\Http\Request;
@@ -36,20 +37,40 @@ class SpellingCorrectorProcessController extends Controller
         $tokenizer = new GeneralTokenizer();
         $tokens = $tokenizer->tokenize($text);
 
-        $clearedTokens = array_map(
-            function ($token) {
-                $cleanedToken = strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', $token));
-                $isIncorrect = $this->doesntExistInDictionary($cleanedToken);
-                return [
-                    "original" => $token,
-                    "cleaned" => $cleanedToken,
-                    "incorrect" => $isIncorrect,
-                    "corrections" => $isIncorrect ? $this->getCorrections($cleanedToken) : []
-                ];
-            }, $tokens
-        );
 
-        return response($clearedTokens);
+        $cleanedTokens = [];
+
+        foreach (range(0, count($tokens) - 1) as $index) {
+            $token = $tokens[$index];
+
+
+
+            $prev_word_1 = $tokens[$index - 2] ?? null;
+            $prev_word_2 = $tokens[$index - 1] ?? null;
+
+
+
+            $cleanedToken = strtolower(preg_replace("/[^A-Za-z0-9 ]/", '', $token));
+            $isIncorrect = $this->doesntExistInDictionary($cleanedToken);
+            $cleanedTokens[] = [
+                "original" => $token,
+                "cleaned" => $cleanedToken,
+                "incorrect" => $isIncorrect,
+                "corrections" => $isIncorrect ? $this->getCorrections($cleanedToken) : [],
+                "ngram_recommendations" => $isIncorrect ?
+                    NgramFrequency::query()
+                        ->where([
+                            "word1" => $prev_word_1,
+                            "word2" => $prev_word_2,
+                        ])
+                        ->orderByDesc("frequency")
+                        ->get([ "word3" ])
+                        ->pluck("word3")
+                    : []
+            ];
+        }
+
+        return response($cleanedTokens);
     }
 
     public function doesntExistInDictionary(string $word): bool

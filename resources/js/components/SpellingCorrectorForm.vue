@@ -31,7 +31,7 @@
             <div class="row mt-3"
                  v-if="this.tokens.length !== 0">
                 <div style="font-size: 14pt"
-                     class="card col-md-9">
+                     class="card col-md-7">
                     <div class="card-body">
                     <span v-for="token in tokens"
                           @click="onTokenClick(token)"
@@ -45,7 +45,7 @@
                     </div>
                 </div>
 
-                <div class="card col-md-3">
+                <div class="card col-md-5">
                     <div class="card-body">
                         <template v-if="selectedToken !== null">
                             <h5> Koreksi untuk "{{ selectedToken.cleaned }}"</h5>
@@ -55,15 +55,33 @@
                                 Kembalikan ke Bentuk Semula
                             </button>
 
-                            <ul class="list-group">
-                                <li
-                                    @click="onCorrectionOptionClick(correction)"
-                                    class="list-group-item list-group-item-action"
-                                    :class="{ active: selectedToken.pickedCorrection === correction}"
-                                    v-for="correction in selectedToken.corrections"
-                                > {{ correction }}
-                                </li>
-                            </ul>
+                            <div class="row">
+                              <div class="col">
+                                <h3> Jaro-Winkler </h3>
+                                <ul class="list-group">
+                                  <li
+                                      @click="onCorrectionOptionClick(correction)"
+                                      class="list-group-item list-group-item-action"
+                                      :class="{ active: selectedToken.pickedCorrection === correction}"
+                                      v-for="correction in selectedToken.corrections"
+                                  > {{ correction }}
+                                  </li>
+                                </ul>
+                              </div>
+                              <div class="col">
+                                <h3> Ngram </h3>
+                                <ul class="list-group">
+                                  <li
+                                      @click="onCorrectionOptionClick(correction)"
+                                      class="list-group-item list-group-item-action"
+                                      :class="{ active: selectedToken.pickedCorrection === correction}"
+                                      v-for="correction in selectedToken.ngram_recommendations"
+                                  > {{ correction }}
+                                  </li>
+                                </ul>
+                              </div>
+                            </div>
+
                         </template>
                     </div>
                 </div>
