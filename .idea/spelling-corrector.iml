@@ -145,6 +145,10 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/http-client-contracts" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/phpunit/php-invoker" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/league/mime-type-detection" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/spatie/macroable" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/spatie/ray" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/stopwatch" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/spatie/backtrace" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

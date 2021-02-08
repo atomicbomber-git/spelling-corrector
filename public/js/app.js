@@ -1998,18 +1998,6 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 //
 //
 //
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -41013,7 +41001,7 @@ var render = function() {
                         _vm._v(" "),
                         _c("div", { staticClass: "row" }, [
                           _c("div", { staticClass: "col" }, [
-                            _c("h3", [_vm._v(" Jaro-Winkler ")]),
+                            _c("h3", [_vm._v(" Rekomendasi Koreksi ")]),
                             _vm._v(" "),
                             _c(
                               "ul",
@@ -41048,47 +41036,6 @@ var render = function() {
                                   ]
                                 )
                               }),
-                              0
-                            )
-                          ]),
-                          _vm._v(" "),
-                          _c("div", { staticClass: "col" }, [
-                            _c("h3", [_vm._v(" Ngram ")]),
-                            _vm._v(" "),
-                            _c(
-                              "ul",
-                              { staticClass: "list-group" },
-                              _vm._l(
-                                _vm.selectedToken.ngram_recommendations,
-                                function(correction) {
-                                  return _c(
-                                    "li",
-                                    {
-                                      staticClass:
-                                        "list-group-item list-group-item-action",
-                                      class: {
-                                        active:
-                                          _vm.selectedToken.pickedCorrection ===
-                                          correction
-                                      },
-                                      on: {
-                                        click: function($event) {
-                                          return _vm.onCorrectionOptionClick(
-                                            correction
-                                          )
-                                        }
-                                      }
-                                    },
-                                    [
-                                      _vm._v(
-                                        " " +
-                                          _vm._s(correction) +
-                                          "\n                              "
-                                      )
-                                    ]
-                                  )
-                                }
-                              ),
                               0
                             )
                           ])

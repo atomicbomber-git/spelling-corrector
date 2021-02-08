@@ -57,25 +57,13 @@
 
                             <div class="row">
                               <div class="col">
-                                <h3> Jaro-Winkler </h3>
+                                <h3> Rekomendasi Koreksi </h3>
                                 <ul class="list-group">
                                   <li
                                       @click="onCorrectionOptionClick(correction)"
                                       class="list-group-item list-group-item-action"
                                       :class="{ active: selectedToken.pickedCorrection === correction}"
                                       v-for="correction in selectedToken.corrections"
-                                  > {{ correction }}
-                                  </li>
-                                </ul>
-                              </div>
-                              <div class="col">
-                                <h3> Ngram </h3>
-                                <ul class="list-group">
-                                  <li
-                                      @click="onCorrectionOptionClick(correction)"
-                                      class="list-group-item list-group-item-action"
-                                      :class="{ active: selectedToken.pickedCorrection === correction}"
-                                      v-for="correction in selectedToken.ngram_recommendations"
                                   > {{ correction }}
                                   </li>
                                 </ul>
