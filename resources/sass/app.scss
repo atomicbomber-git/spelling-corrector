@@ -1,8 +1,29 @@
 // Fonts
-@import url('https://fonts.googleapis.com/css?family=Nunito');
-
-// Variables
-@import 'variables';
+@import url('https://fonts.googleapis.com/css?family=Lato');
 
 // Bootstrap
 @import '~bootstrap/scss/bootstrap';
+
+// Font Awesome 5
+@import '~@fortawesome/fontawesome-free/css/all.css';
+
+body {
+  font-family: "Lato", monospace;
+}
+
+// Custom rules
+.feature-title {
+  margin-bottom: 1.5rem;
+}
+
+.menu-title {
+  font-weight: bold;
+}
+
+.text-sm {
+  font-size: 0.8rem;
+}
+
+th {
+  vertical-align: middle !important;
+}

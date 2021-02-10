@@ -97,8 +97,6 @@ class SpellingCorrectorProcessController extends Controller
                 ->get()
         );
 
-        ray()->send($most_frequent_ngram_frequencies->toArray());
-
         $most_frequent_ngram_frequencies->merge(
             NgramFrequency::query()
                 ->select("word3", "frequency")

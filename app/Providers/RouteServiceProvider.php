@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\User;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +23,21 @@ class RouteServiceProvider extends ServiceProvider
      * @var string
      */
     public const HOME = '/word';
+    /* TODO: Delete above safely */
+
+    public static function home()
+    {
+        ray()->send(auth()->user()->toArray());
+
+        switch (auth()->user()->level ?? null) {
+            case User::LEVEL_MAHASISWA:
+                return route("dokumen-word.index");
+            case User::LEVEL_ADMIN:
+                return route("word.index");
+            default:
+                return route("dokumen-word.index");
+        }
+    }
 
     /**
      * Define your route model bindings, pattern filters, etc.

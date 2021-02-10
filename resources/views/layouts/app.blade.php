@@ -27,54 +27,18 @@
 </head>
 <body>
 <div id="app">
-    <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
-        <div class="container">
-            <a class="navbar-brand"
-               href="{{ url('/') }}">
-                {{ config('app.name', 'Laravel') }}
-            </a>
-            <button class="navbar-toggler"
-                    type="button"
-                    data-toggle="collapse"
-                    data-target="#navbarSupportedContent"
-                    aria-controls="navbarSupportedContent"
-                    aria-expanded="false"
-                    aria-label="{{ __('Toggle navigation') }}">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+    <x-navbar/>
 
-            <div class="collapse navbar-collapse"
-                 id="navbarSupportedContent">
-                <!-- Left Side Of Navbar -->
-                <ul class="navbar-nav mr-auto">
-                    @auth
-                        <li class="nav-item">
-                            <a href="{{ route("word.index") }}"
-                               class="nav-link {{ \Illuminate\Support\Facades\Route::is('word.*') ? "active" : "" }}">
-                                Word List
-                            </a>
-                        </li>
-                    @endauth
-                </ul>
+    <main class="container py-4">
+        <div class="row">
+            @auth
+            <x-sidebar/>
+            @endauth
 
-                <!-- Right Side Of Navbar -->
-                <ul class="navbar-nav ml-auto">
-                    @auth
-                        <form method="POST"
-                              action="{{ route("logout") }}">
-                            @csrf
-                            <button class="btn btn-outline-danger">
-                                Log Out
-                            </button>
-                        </form>
-                    @endauth
-                </ul>
-            </div>
+            <article class="@auth col-md-8 @else col-md-12 @endauth">
+                @yield('content')
+            </article>
         </div>
-    </nav>
-
-    <main class="py-4">
-        @yield('content')
     </main>
 </div>
 </body>

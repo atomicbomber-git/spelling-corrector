@@ -14,7 +14,10 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         $this->call(AdminUserSeeder::class);
+        $this->call(MahasiswaSeeder::class);
+
 //        $this->call(WordSeeder::class);
         $this->call(NgramAndWordSeeder::class);
+        $this->call(DokumenWordSeeder::class);
     }
 }

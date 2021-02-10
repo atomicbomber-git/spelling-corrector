@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'errors' => [
+        'no_data' => 'Data tidak tersedia.'
+    ],
 
     'create' => [
         'success' => 'Data berhasil ditambahkan.',

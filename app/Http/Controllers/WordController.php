@@ -9,6 +9,14 @@ use Illuminate\Http\Request;
 
 class WordController extends Controller
 {
+    private ResponseFactory $responseFactory;
+
+    public function __construct(ResponseFactory $responseFactory)
+    {
+        $this->middleware("auth");
+        $this->responseFactory = $responseFactory;
+    }
+
     /**
      * Display a listing of the resource.
      *

@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => 'Korektor Ejaan Jaro-Winkler',
+    'name' => 'Korektor Ejaan',
 
     /*
     |--------------------------------------------------------------------------

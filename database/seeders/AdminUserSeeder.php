@@ -19,6 +19,7 @@ class AdminUserSeeder extends Seeder
             "name" => "Admin",
             "username" => "admin",
             "password" => Hash::make("admin"),
+            "level" => User::LEVEL_ADMIN,
         ]);
     }
 }
