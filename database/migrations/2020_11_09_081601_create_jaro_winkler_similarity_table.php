@@ -28,17 +28,16 @@ class CreateJaroWinklerSimilarityTable extends Migration
             $table->index(["word_a", "similaritas"]);
         });
 
-//        DB::unprepared("DROP TRIGGER IF EXISTS TR_similaritas_jaro_winkler");
-//
-//        DB::unprepared(<<<HERE
-//CREATE TRIGGER TR_similaritas_jaro_winkler AFTER INSERT ON words
-//    INSERT INTO similaritas_jaro_winkler (
-//
-//
-//    )
-//HERE
-//);
+        DB::unprepared(<<<HERE
+DROP TRIGGER IF EXISTS TR_INSERT_similaritas_jaro_winkler;
 
+CREATE TRIGGER TR_INSERT_similaritas_jaro_winkler
+    AFTER INSERT
+    ON words FOR EACH ROW
+    INSERT INTO similaritas_jaro_winkler (word_a, word_b, similaritas)
+        SELECT NEW.content AS a, words.content AS b, jaro_winkler_similarity(NEW.content, words.content) from words
+HERE
+        );
 
     }
 

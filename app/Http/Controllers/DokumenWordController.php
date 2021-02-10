@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\BusinessLogic\RekomendatorKoreksiEjaan;
 use App\DokumenWord;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -30,24 +31,13 @@ class DokumenWordController extends Controller
         ]);
     }
 
-    private function cleanToken()
-    {
-
-    }
-
     public function show(DokumenWord $dokumen_word)
     {
-        /* TODO: Clean tokens */
 
-//        $text = strip_tags($dokumen_word->konten_html);
-//
-//        $tokens = $this->tokenizer->tokenize($text);
-//        $tokens = array_map(
-//            fn ($token) => preg_replace('/^(\W)*/', '', $token),
-//            $tokens
-//        );
-//
-//        return $tokens;
+        $rekomendator = new RekomendatorKoreksiEjaan("saya pergi ke sekola");
+        return $rekomendator->recommendations();
+
+
 
 
 
