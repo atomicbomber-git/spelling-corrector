@@ -23,8 +23,7 @@ Auth::routes([
     "login"
 ]);
 
-//Route::redirect("/", "/login");
-
+Route::redirect("/", "/login");
 Route::resource("dokumen-word", class_basename(DokumenWordController::class));
 
 

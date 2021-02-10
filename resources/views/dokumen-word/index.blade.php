@@ -9,11 +9,11 @@
         @if($dokumen_words->isNotEmpty())
             <x-table>
                 <x-thead>
-                <tr>
-                    <th> @lang("application.number_symbol") </th>
-                    <th> @lang("application.title") </th>
-                    <th class="text-center"> @lang("application.controls") </th>
-                </tr>
+                    <tr>
+                        <th> @lang("application.number_symbol") </th>
+                        <th> @lang("application.title") </th>
+                        <th class="text-center"> @lang("application.controls") </th>
+                    </tr>
                 </x-thead>
 
                 <tbody>
@@ -22,7 +22,14 @@
                         <td> {{ $dokumen_words->firstItem() + $loop->index }} </td>
                         <td> {{ $dokumen_word->nama }} </td>
                         <td class="text-center">
+                            <a href="{{ route("dokumen-word.show", $dokumen_word) }}"
+                               class="btn btn-primary btn-sm"
+                            >
+                                @lang("application.show")
+                            </a>
+
                             <form
+                                    class="d-inline-block"
                                     x-data="{}"
                                     @submit.prevent="confirmDialog().then(res => res.isConfirmed && $event.target.submit())"
                                     action="{{ route("dokumen-word.destroy", $dokumen_word) }}"

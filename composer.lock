@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d1b76ae72eb60bf90f3e1102508de74d",
+    "content-hash": "87f063617ce60313199f5f824a0a92a7",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -2036,6 +2036,78 @@
             "time": "2021-01-18T20:58:21+00:00"
         },
         {
+            "name": "livewire/livewire",
+            "version": "v2.3.17",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/livewire/livewire.git",
+                "reference": "1a1d43ff365301ae99ed7f0ccf02c553d4eeba03"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/livewire/livewire/zipball/1a1d43ff365301ae99ed7f0ccf02c553d4eeba03",
+                "reference": "1a1d43ff365301ae99ed7f0ccf02c553d4eeba03",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/database": "^7.0|^8.0",
+                "illuminate/support": "^7.0|^8.0",
+                "illuminate/validation": "^7.0|^8.0",
+                "php": "^7.2.5|^8.0",
+                "symfony/http-kernel": "^5.0"
+            },
+            "require-dev": {
+                "calebporzio/sushi": "^2.1",
+                "laravel/framework": "^7.0|^8.0",
+                "mockery/mockery": "^1.3.1",
+                "orchestra/testbench": "^5.0|^6.0",
+                "orchestra/testbench-dusk": "^5.2|^6.0",
+                "phpunit/phpunit": "^8.4|^9.0",
+                "psy/psysh": "@stable"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Livewire\\LivewireServiceProvider"
+                    ],
+                    "aliases": {
+                        "Livewire": "Livewire\\Livewire"
+                    }
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/helpers.php"
+                ],
+                "psr-4": {
+                    "Livewire\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Caleb Porzio",
+                    "email": "calebporzio@gmail.com"
+                }
+            ],
+            "description": "A front-end framework for Laravel.",
+            "support": {
+                "issues": "https://github.com/livewire/livewire/issues",
+                "source": "https://github.com/livewire/livewire/tree/v2.3.17"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/calebporzio",
+                    "type": "github"
+                }
+            ],
+            "time": "2021-02-09T15:15:49+00:00"
+        },
+        {
             "name": "maennchen/zipstream-php",
             "version": "2.1.0",
             "source": {
@@ -2410,6 +2482,55 @@
                 "source": "https://github.com/nikic/PHP-Parser/tree/v4.10.4"
             },
             "time": "2020-12-20T10:01:03+00:00"
+        },
+        {
+            "name": "nlp-tools/nlp-tools",
+            "version": "v0.1.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/angeloskath/php-nlp-tools.git",
+                "reference": "bbccab0f3ca7277bdf7b292ba67ca644efd0cefe"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/angeloskath/php-nlp-tools/zipball/bbccab0f3ca7277bdf7b292ba67ca644efd0cefe",
+                "reference": "bbccab0f3ca7277bdf7b292ba67ca644efd0cefe",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-0": {
+                    "NlpTools\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "WTFPL"
+            ],
+            "authors": [
+                {
+                    "name": "Angelos Katharopoulos",
+                    "email": "angelos@yourse.gr"
+                }
+            ],
+            "description": "NlpTools is a set of php 5.3+ classes for beginner to semi advanced natural language processing work.",
+            "keywords": [
+                "machine learning",
+                "nlp"
+            ],
+            "support": {
+                "issues": "https://github.com/angeloskath/php-nlp-tools/issues",
+                "source": "https://github.com/angeloskath/php-nlp-tools/tree/master"
+            },
+            "time": "2016-11-03T15:34:42+00:00"
         },
         {
             "name": "opis/closure",
@@ -10427,7 +10548,8 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^7.4"
+        "php": "^7.4",
+        "ext-dom": "*"
     },
     "platform-dev": [],
     "plugin-api-version": "2.0.0"

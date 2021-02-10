@@ -17,6 +17,7 @@ class CreateDokumenWordTable extends Migration
             $table->increments('id');
             $table->string('nama')->index();
             $table->unsignedInteger('user_id')->index();
+            $table->longText('konten_html')->nullable();
             $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users');
         });

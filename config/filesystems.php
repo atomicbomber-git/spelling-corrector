@@ -48,6 +48,11 @@ return [
             'root' => storage_path('app'),
         ],
 
+        'seeders' => [
+            'driver' => 'local',
+            'root' => database_path('seeders')
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

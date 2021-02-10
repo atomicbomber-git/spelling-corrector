@@ -11,10 +11,6 @@
 
     <title>{{ config('app.name', 'Laravel') }}</title>
 
-    <!-- Scripts -->
-    <script src="{{ asset('js/app.js') }}"
-            defer></script>
-
     <!-- Fonts -->
     <link rel="dns-prefetch"
           href="//fonts.gstatic.com">
@@ -24,6 +20,8 @@
     <!-- Styles -->
     <link href="{{ asset('css/app.css') }}"
           rel="stylesheet">
+
+    @livewireStyles
 </head>
 <body>
 <div id="app">
@@ -35,11 +33,17 @@
             <x-sidebar/>
             @endauth
 
-            <article class="@auth col-md-8 @else col-md-12 @endauth">
+            <article class="@auth col-md-10 @else col-md-12 @endauth">
                 @yield('content')
             </article>
         </div>
     </main>
 </div>
 </body>
+
+<!-- Scripts -->
+@livewireScripts
+<script src="{{ asset('js/app.js') }}"></script>
+
+@stack("scripts")
 </html>

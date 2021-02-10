@@ -8,4 +8,6 @@ return [
     "title" => "Judul",
     "destroy" => "Hapus",
     "log_out" => "Keluar",
+    "show" => "Detail",
+    "content" => "Konten",
 ];
