@@ -34,7 +34,7 @@ class DokumenWordController extends Controller
     public function show(DokumenWord $dokumen_word)
     {
 
-        $rekomendator = new RekomendatorKoreksiEjaan("saya pergi ke sekola");
+        $rekomendator = new RekomendatorKoreksiEjaan("saya pergi ke sekolh");
         return $rekomendator->recommendations();
 
 

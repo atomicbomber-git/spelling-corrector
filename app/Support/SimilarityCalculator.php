@@ -58,7 +58,7 @@ class SimilarityCalculator
         }
     }
 
-    public static function jaroWinklerSimilarity(string $textA, string $textB, float $scalingFactor = 0.1): float
+public static function jaroWinklerSimilarity(string $textA, string $textB, float $scalingFactor = 0.1): float
     {
         $jaroDistance = self::jaroDistance($textA, $textB);
 
