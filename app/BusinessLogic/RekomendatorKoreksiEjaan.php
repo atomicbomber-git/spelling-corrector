@@ -98,16 +98,13 @@ class RekomendatorKoreksiEjaan
 
     private function getMostSimilarWords(string $incorrectWord, int $max = 5): Collection
     {
-        $words = Word::query()
+        return Word::query()
             ->select("content AS word")
             ->selectRaw("jaro_winkler_similarity(?, content) AS points", [$incorrectWord])
             ->orderByRaw("jaro_winkler_similarity(?, content) DESC", [$incorrectWord])
             ->limit($max)
             ->get();
-
-        return $words;
     }
-
 
     public function getMostFrequentNgramFrequencies(?string $word_1, ?string $word_2, $candidates = []): Collection
     {
