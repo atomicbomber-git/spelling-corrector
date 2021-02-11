@@ -27,14 +27,14 @@ class NgramAndWordSeeder extends Seeder
 
         $this->command->line("Loading data dari file teks kalimat.");
 
-        $fileload_progress_bar = $this->createProgressBar($sentence_filenames);
+        $file_loading_progress_bar = $this->createProgressBar($sentence_filenames);
 
         foreach ($sentence_filenames as $sentence_file) {
             if (in_array($sentence_file, [".", ".."])) {
                 continue;
             }
 
-            $fileload_progress_bar->setMessage("Load berkas " . $sentence_file);
+            $file_loading_progress_bar->setMessage("Load berkas " . $sentence_file);
 
             $filepath = "{$sentence_files_root_dir}/{$sentence_file}";
             $file_handle = fopen($filepath, "r");
@@ -48,7 +48,6 @@ class NgramAndWordSeeder extends Seeder
                     $line = trim($line);
 
                     $words = explode(' ', $line);
-
                     foreach ($words as $word) {
                         $dictionary[$word] ??= 0;
                         ++$dictionary[$word];
@@ -69,18 +68,17 @@ class NgramAndWordSeeder extends Seeder
                 $this->command->error("Error opening {$filepath}.");
             }
 
-            $fileload_progress_bar->advance();
+            $file_loading_progress_bar->advance();
             DB::commit();
         }
 
-//        $words = array_filter($dictionary, fn ($frequency, $word) => $frequency > 2, ARRAY_FILTER_USE_BOTH);
-
-        $words = array_filter($dictionary, fn ($word) => strlen($word) > 1 && $this->digit_ratio($word) < 0.2, ARRAY_FILTER_USE_KEY);
+        $words = array_filter($dictionary, fn ($frequency, $word) => $frequency > 1, ARRAY_FILTER_USE_BOTH);
+        $words = array_filter($words, fn ($word) => strlen($word) > 1 && $this->digit_ratio($word) < 0.2, ARRAY_FILTER_USE_KEY);
         $words = array_map(fn ($word) => ["content" => $word], array_keys($words));
 
         Word::query()->insert($words);
 
-        $fileload_progress_bar->finish();
+        $file_loading_progress_bar->finish();
         $flattened_ngram_frequency_values = $this->getFlattenedNgramFrequencyValues($ngram_frequencies);
         $this->storeNgramFrequenciesToDatabase($flattened_ngram_frequency_values);
     }

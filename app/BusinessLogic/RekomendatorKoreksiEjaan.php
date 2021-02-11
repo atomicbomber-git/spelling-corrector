@@ -15,8 +15,8 @@ use TextAnalysis\Tokenizers\GeneralTokenizer;
 class RekomendatorKoreksiEjaan
 {
     public const MAX_RECOMMENDATIONS = 5;
-    public const JARO_WINKLER_WEIGHT = 1;
-    public const NGRAM_FREQUENCY_WEIGHT = 0;
+    public const JARO_WINKLER_WEIGHT = 0.7;
+    public const NGRAM_FREQUENCY_WEIGHT = 0.3;
 
     public string $text;
     public array $tokens;
@@ -98,10 +98,14 @@ class RekomendatorKoreksiEjaan
 
     private function getMostSimilarWords(string $incorrectWord, int $max = 5): Collection
     {
-        return $this->dictionary->map(fn($entry) => [
-            "word" => $entry["content"],
-            "points" => SimilarityCalculator::jaroWinklerSimilarity($incorrectWord, $entry["content"])
-        ])->sortByDesc("similarity")->take($max);
+        $words = Word::query()
+            ->select("content AS word")
+            ->selectRaw("jaro_winkler_similarity(?, content) AS points", [$incorrectWord])
+            ->orderByRaw("jaro_winkler_similarity(?, content) DESC", [$incorrectWord])
+            ->limit($max)
+            ->get();
+
+        return $words;
     }
 
 
@@ -143,7 +147,6 @@ class RekomendatorKoreksiEjaan
     public function getRecommendations(string $cleanedToken, ?string $prev_word_1, ?string $prev_word_2): array
     {
         $most_similar_words = $this->getMostSimilarWords($cleanedToken, self::MAX_RECOMMENDATIONS)->pluck("points", "word");
-
         $most_frequent_ngram_frequencies = $this->getMostFrequentNgramFrequencies($prev_word_1, $prev_word_2)->pluck("points", "word");
 
         return (new Collection())
