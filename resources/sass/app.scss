@@ -1,5 +1,5 @@
 // Fonts
-@import url('https://fonts.googleapis.com/css?family=Lato');
+@import url('https://fonts.googleapis.com/css?family=Raleway');
 
 // Bootstrap
 @import '~bootstrap/scss/bootstrap';
@@ -10,6 +10,8 @@
 body {
   font-family: "Lato", monospace;
 }
+
+.has-spelling-error{text-decoration: underline;text-decoration-color: red;}
 
 // Custom rules
 .feature-title {

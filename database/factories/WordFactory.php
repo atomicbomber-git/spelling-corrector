@@ -2,10 +2,10 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Word;
+use App\SimilaritasJaroWinkler;
 use Faker\Generator as Faker;
 
-$factory->define(Word::class, function (Faker $faker) {
+$factory->define(SimilaritasJaroWinkler::class, function (Faker $faker) {
     return [
         //
     ];

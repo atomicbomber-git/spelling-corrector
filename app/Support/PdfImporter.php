@@ -4,7 +4,7 @@
 namespace App\Support;
 
 
-use App\Word;
+use App\SimilaritasJaroWinkler;
 use Illuminate\Support\Facades\DB;
 use Sastrawi\Tokenizer\TokenizerInterface;
 use Spatie\PdfToText\Pdf;
@@ -26,7 +26,7 @@ class PdfImporter
         $tokens = array_map(fn($token) => strtolower($token), $tokens);
         $datetime = now();
 
-        return DB::table((new Word())->getTable())
+        return DB::table((new SimilaritasJaroWinkler())->getTable())
             ->insertOrIgnore(
                 array_map(fn($token) => [
                     "content" => $token,

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DokumenWordController;
 use App\Http\Controllers\ImportWordsFromDocumentController;
+use App\Http\Controllers\RekomendasiPembenaranController;
 use App\Http\Controllers\SpellingCorrectorFormController;
 use App\Http\Controllers\SpellingCorrectorProcessController;
 use App\Http\Controllers\WordController;
@@ -25,7 +26,8 @@ Auth::routes([
 
 Route::redirect("/", "/login");
 Route::resource("dokumen-word", class_basename(DokumenWordController::class));
-
+Route::resource("dokumen-word-html", class_basename(DokumenWordController::class))->only("show");
+Route::post("rekomendasi-pembenaran", class_basename(RekomendasiPembenaranController::class))->name("rekomendasi-pembenaran");
 
 //Route::get("/", class_basename(SpellingCorrectorFormController::class));
 //Route::post("/", class_basename(SpellingCorrectorProcessController::class));

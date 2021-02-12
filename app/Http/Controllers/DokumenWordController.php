@@ -31,28 +31,14 @@ class DokumenWordController extends Controller
         ]);
     }
 
-    public function show(DokumenWord $dokumen_word)
+    public function show(Request $request, DokumenWord $dokumen_word)
     {
+        if ($request->ajax()) {
+            return $this->responseFactory->json($dokumen_word);
+        }
 
-        $rekomendator = new RekomendatorKoreksiEjaan("saya pergi ke sekolh");
-        return $rekomendator->recommendations();
-
-
-
-
-
-
-
-
-
-
-//        ray()->send();
-//        strtok()
-//        return "OK";
-//        return \response(" $dokumen_word->konten_html");
-
-//        return $this->responseFactory->view("dokumen-word.show", [
-//            "dokumen_word" => $dokumen_word,
-//        ]);
+        return $this->responseFactory->view("dokumen-word.show", [
+            "dokumen_word" => $dokumen_word->makeHidden("konten_html"),
+        ]);
     }
 }

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\NgramFrequency;
 use App\Support\SimilarityCalculator;
-use App\Word;
+use App\SimilaritasJaroWinkler;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
@@ -21,7 +21,7 @@ class SpellingCorrectorProcessController extends Controller
 
     public function __construct(GeneralTokenizer $tokenizer)
     {
-        $this->dictionary = Word::query()
+        $this->dictionary = SimilaritasJaroWinkler::query()
             ->select("content")
             ->get()
             ->keyBy("content");

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Word;
+use App\SimilaritasJaroWinkler;
 use Illuminate\Http\Request;
 
 class SpellingCorrectorFormController extends Controller

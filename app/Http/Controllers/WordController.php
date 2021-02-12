@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Constants\MessageState;
-use App\Word;
+use App\SimilaritasJaroWinkler;
 use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Http\Request;
 
@@ -25,7 +25,7 @@ class WordController extends Controller
      */
     public function index(ResponseFactory $responseFactory)
     {
-        $words = Word::query()
+        $words = SimilaritasJaroWinkler::query()
             ->select("content")
             ->paginate();
 
@@ -56,10 +56,10 @@ class WordController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param \App\Word $word
+     * @param \App\SimilaritasJaroWinkler $word
      * @return \Illuminate\Http\Response
      */
-    public function show(Word $word)
+    public function show(SimilaritasJaroWinkler $word)
     {
         //
     }
@@ -67,10 +67,10 @@ class WordController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param \App\Word $word
+     * @param \App\SimilaritasJaroWinkler $word
      * @return \Illuminate\Http\Response
      */
-    public function edit(Word $word)
+    public function edit(SimilaritasJaroWinkler $word)
     {
         //
     }
@@ -79,10 +79,10 @@ class WordController extends Controller
      * Update the specified resource in storage.
      *
      * @param \Illuminate\Http\Request $request
-     * @param \App\Word $word
+     * @param \App\SimilaritasJaroWinkler $word
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Word $word)
+    public function update(Request $request, SimilaritasJaroWinkler $word)
     {
         //
     }
@@ -90,10 +90,10 @@ class WordController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param \App\Word $word
+     * @param \App\SimilaritasJaroWinkler $word
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function destroy(Word $word)
+    public function destroy(SimilaritasJaroWinkler $word)
     {
         $word->delete();
 

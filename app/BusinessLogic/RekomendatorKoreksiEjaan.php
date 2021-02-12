@@ -5,12 +5,11 @@ namespace App\BusinessLogic;
 
 
 use App\NgramFrequency;
-use App\Support\SimilarityCalculator;
+use App\SimilaritasJaroWinkler;
 use App\Word;
 use Illuminate\Support\Collection;
 use NlpTools\Tokenizers\TokenizerInterface;
 use NlpTools\Tokenizers\WhitespaceAndPunctuationTokenizer;
-use TextAnalysis\Tokenizers\GeneralTokenizer;
 
 class RekomendatorKoreksiEjaan
 {
@@ -32,16 +31,13 @@ class RekomendatorKoreksiEjaan
         $this->preprocess();
     }
 
-    public function tokenDoesntExistOnDictionary(string $token): bool
+    public function getDictionary(): Collection
     {
-        return !$this->tokenExistsInDictionary($token);
+        return Word::query()
+            ->select("content")
+            ->get()
+            ->keyBy("content");
     }
-
-    public function tokenExistsInDictionary(string $token): bool
-    {
-        return isset($this->dictionary[$token]);
-    }
-
 
     private function preprocess()
     {
@@ -52,13 +48,13 @@ class RekomendatorKoreksiEjaan
     private function filterTokens(array $tokens): array
     {
         $tokens = array_map(
-            fn ($token) => preg_replace('/\W/', '', $token),
+            fn($token) => preg_replace('/\W/', '', $token),
             $tokens
         );
 
         $tokens = array_values(array_filter(
             $tokens,
-            fn ($token) => strlen($token) > 0
+            fn($token) => strlen($token) > 0
         ));
 
         return $tokens;
@@ -88,22 +84,78 @@ class RekomendatorKoreksiEjaan
         return $outputTokens;
     }
 
-    public function getDictionary(): Collection
+    public function tokenDoesntExistOnDictionary(string $token): bool
+    {
+        return !$this->tokenExistsInDictionary($token);
+    }
+
+    public function tokenExistsInDictionary(string $token): bool
     {
         return Word::query()
-            ->select("content")
-            ->get()
-            ->keyBy("content");
+                ->where("content", "=", $token)
+                ->count() > 0;
+    }
+
+    /**
+     * @param string $cleanedToken
+     * @param string $prev_word_1
+     * @param string $prev_word_2
+     */
+    public function getRecommendations(string $cleanedToken, ?string $prev_word_1, ?string $prev_word_2): array
+    {
+        $most_similar_words = $this->getMostSimilarWords($cleanedToken, self::MAX_RECOMMENDATIONS)->pluck("points", "word");
+        $most_frequent_ngram_frequencies = $this->getMostFrequentNgramFrequencies($prev_word_1, $prev_word_2)->pluck("points", "word");
+
+        return (new Collection())
+            ->merge($most_similar_words->keys())
+            ->merge($most_frequent_ngram_frequencies->keys())
+            ->map(function ($word) use ($most_similar_words, $most_frequent_ngram_frequencies) {
+                return [
+                    "word" => $word,
+                    "points" =>
+                        ($most_similar_words[$word] ?? 0 * self::JARO_WINKLER_WEIGHT) +
+                        ($most_frequent_ngram_frequencies[$word] ?? 0 * self::NGRAM_FREQUENCY_WEIGHT)
+                ];
+            })
+            ->sortByDesc("points")
+            ->pluck("word")
+            ->toArray();
     }
 
     private function getMostSimilarWords(string $incorrectWord, int $max = 5): Collection
     {
-        return Word::query()
+        $cachedSimilarWords = SimilaritasJaroWinkler::query()
+            ->select([
+                "word_a AS word",
+                "similaritas AS points"
+            ])
+            ->where("word_a", "=", $incorrectWord)
+            ->orderByDesc("similaritas")
+            ->get();
+
+
+        if ($cachedSimilarWords->isNotEmpty()) {
+            return $cachedSimilarWords;
+        }
+
+        $similarWords = Word::query()
             ->select("content AS word")
             ->selectRaw("jaro_winkler_similarity(?, content) AS points", [$incorrectWord])
             ->orderByRaw("jaro_winkler_similarity(?, content) DESC", [$incorrectWord])
             ->limit($max)
             ->get();
+
+        SimilaritasJaroWinkler::query()->insert(
+            $similarWords->map(function ($similarWord) use ($incorrectWord) {
+                return [
+                    "word_a" => $incorrectWord,
+                    "word_b" => $similarWord->word,
+                    "similaritas" => $similarWord->points,
+                ];
+            })->toArray()
+        );
+
+        return $similarWords;
     }
 
     public function getMostFrequentNgramFrequencies(?string $word_1, ?string $word_2, $candidates = []): Collection
@@ -134,31 +186,5 @@ class RekomendatorKoreksiEjaan
             "word" => $ngram_frequency->word3,
             "points" => $ngram_frequency->frequency / $ngram_frequency_sum,
         ]);
-    }
-
-    /**
-     * @param string $cleanedToken
-     * @param string $prev_word_1
-     * @param string $prev_word_2
-     */
-    public function getRecommendations(string $cleanedToken, ?string $prev_word_1, ?string $prev_word_2): array
-    {
-        $most_similar_words = $this->getMostSimilarWords($cleanedToken, self::MAX_RECOMMENDATIONS)->pluck("points", "word");
-        $most_frequent_ngram_frequencies = $this->getMostFrequentNgramFrequencies($prev_word_1, $prev_word_2)->pluck("points", "word");
-
-        return (new Collection())
-            ->merge($most_similar_words->keys())
-            ->merge($most_frequent_ngram_frequencies->keys())
-            ->map(function ($word) use ($most_similar_words, $most_frequent_ngram_frequencies) {
-                return [
-                    "word" => $word,
-                    "points" =>
-                        ($most_similar_words[$word] ?? 0 * self::JARO_WINKLER_WEIGHT) +
-                        ($most_frequent_ngram_frequencies[$word] ?? 0 * self::NGRAM_FREQUENCY_WEIGHT)
-                ];
-            })
-            ->sortByDesc("points")
-            ->pluck("word")
-            ->toArray();
     }
 }

@@ -16,11 +16,7 @@ class CreateJaroWinklerSimilarityTable extends Migration
     {
         Schema::create('similaritas_jaro_winkler', function (Blueprint $table) {
             $table->string('word_a');
-            $table->foreign('word_a')->references('content')->on('words')
-                ->cascadeOnDelete();
             $table->string('word_b');
-            $table->foreign('word_b')->references('content')->on('words')
-                ->cascadeOnDelete();
             $table->unsignedDouble("similaritas");
             $table->primary(["word_a", "word_b"]);
             $table->index(["word_a", "similaritas"]);

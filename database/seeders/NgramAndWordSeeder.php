@@ -72,9 +72,9 @@ class NgramAndWordSeeder extends Seeder
             DB::commit();
         }
 
-        $words = array_filter($dictionary, fn ($frequency, $word) => $frequency > 1, ARRAY_FILTER_USE_BOTH);
-        $words = array_filter($words, fn ($word) => strlen($word) > 1 && $this->digit_ratio($word) < 0.2, ARRAY_FILTER_USE_KEY);
-        $words = array_map(fn ($word) => ["content" => $word], array_keys($words));
+        $words = array_filter($dictionary, fn($frequency, $word) => $frequency > 3, ARRAY_FILTER_USE_BOTH);
+        $words = array_filter($words, fn($word) => strlen($word) > 1 && $this->digit_ratio($word) < 0.2, ARRAY_FILTER_USE_KEY);
+        $words = array_map(fn($word) => ["content" => $word], array_keys($words));
 
         Word::query()->insert($words);
 
@@ -82,15 +82,6 @@ class NgramAndWordSeeder extends Seeder
         $flattened_ngram_frequency_values = $this->getFlattenedNgramFrequencyValues($ngram_frequencies);
         $this->storeNgramFrequenciesToDatabase($flattened_ngram_frequency_values);
     }
-
-    function digit_ratio($text)
-    {
-        $text_len = strlen($text);
-        return
-            ($text_len - strlen(preg_replace("/\d+/", "", $text)))
-            / $text_len;
-    }
-
 
     /**
      * @param array $sentence_filenames
@@ -101,6 +92,14 @@ class NgramAndWordSeeder extends Seeder
         $progress_bar = $this->command->getOutput()->createProgressBar(count($sentence_filenames));
         $progress_bar->setFormat("%current%/%max% [%bar%] %percent:3s%%\n%message%\n");
         return $progress_bar;
+    }
+
+    function digit_ratio($text)
+    {
+        $text_len = strlen($text);
+        return
+            ($text_len - strlen(preg_replace("/\d+/", "", $text)))
+            / $text_len;
     }
 
     /**

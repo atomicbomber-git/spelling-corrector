@@ -1,4 +1,4 @@
-@import url(https://fonts.googleapis.com/css?family=Lato);/*!
+@import url(https://fonts.googleapis.com/css?family=Raleway);/*!
  * Font Awesome Free 5.15.2 by @fontawesome - https://fontawesome.com
  * License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
  */
@@ -15539,6 +15539,12 @@ a.text-dark:focus {
 
 body {
   font-family: "Lato", monospace;
+}
+
+.has-spelling-error {
+  text-decoration: underline;
+  -webkit-text-decoration-color: red;
+          text-decoration-color: red;
 }
 
 .feature-title {
