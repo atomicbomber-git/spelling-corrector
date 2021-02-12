@@ -4353,6 +4353,28 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 
 
@@ -4377,11 +4399,17 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       dokumen: null,
       recommendations: {},
       processableTextPieces: [],
-      processedCount: 0
+      processedTextPiecesCount: 0
     };
+  },
+  computed: {
+    textProcessingProgress: function textProcessingProgress() {
+      return Math.round(this.processedTextPiecesCount / this.processableTextPieces.length * 100);
+    }
   },
   methods: {
     markTokensThatHasSpellingError: function markTokensThatHasSpellingError(editor, token) {
+      console.log(token);
       var markerClass = "has-spelling-error";
       var editorContent = editor.getContent();
       var tokenPos = editorContent.toLowerCase().indexOf(token.toLowerCase());
@@ -4425,32 +4453,31 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       // this.markTokensThatHasSpellingError(editor, token);
 
       this.processableTextPieces = Object(lodash__WEBPACK_IMPORTED_MODULE_4__["chunk"])(this.getProcessableTextPieces(editor), 15);
-      this.obtainRecommendations();
+      this.fetchRecommendationsFromServer();
     },
-    obtainRecommendations: function obtainRecommendations() {
+    getSpellingRecommendations: function getSpellingRecommendations(text) {
+      return axios__WEBPACK_IMPORTED_MODULE_1___default.a.post(this.recommenderUrl, {
+        text: text
+      });
+    },
+    fetchRecommendationsFromServer: function fetchRecommendationsFromServer() {
       var _this2 = this;
 
       return _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee() {
-        var getSpellingRecommendations, _iterator, _step, textTokens, text, recommendationData;
+        var _iterator, _step, textTokens, text, recommendationData;
 
         return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
-                getSpellingRecommendations = function getSpellingRecommendations(text) {
-                  return axios__WEBPACK_IMPORTED_MODULE_1___default.a.post(_this2.recommenderUrl, {
-                    text: text
-                  });
-                };
-
                 _iterator = _createForOfIteratorHelper(_this2.processableTextPieces);
-                _context.prev = 2;
+                _context.prev = 1;
 
                 _iterator.s();
 
-              case 4:
+              case 3:
                 if ((_step = _iterator.n()).done) {
-                  _context.next = 14;
+                  _context.next = 13;
                   break;
                 }
 
@@ -4458,51 +4485,54 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                 text = textTokens.map(function (token) {
                   return token.replace(new RegExp("[^\\w]*$", "gm"), '').replace(new RegExp("^[^\\w]*", "gm"), '');
                 }).filter(function (token) {
-                  return token.length > 0;
+                  return token.length > 1;
                 }).filter(function (token) {
                   return !_this2.recommendations.hasOwnProperty(token.toLowerCase());
                 }).join(' ');
-                console.log(text);
-                _context.next = 10;
-                return getSpellingRecommendations(text);
+                _context.next = 8;
+                return _this2.getSpellingRecommendations(text);
 
-              case 10:
+              case 8:
                 recommendationData = _context.sent;
                 recommendationData.data.forEach(function (recommendationDatum) {
                   if (_this2.recommendations.hasOwnProperty(recommendationDatum.token)) {
                     return;
                   }
 
-                  _this2.recommendations[recommendationDatum.token] = recommendationDatum.recommendations;
+                  _this2.recommendations[recommendationDatum.token] = recommendationDatum.recommendations; // this.markTokensThatHasSpellingError(
+                  //     this.$refs.vue_editor.editor,
+                  //     recommendationDatum.token,
+                  // )
                 });
+                ++_this2.processedTextPiecesCount;
 
-              case 12:
-                _context.next = 4;
+              case 11:
+                _context.next = 3;
                 break;
 
-              case 14:
-                _context.next = 19;
+              case 13:
+                _context.next = 18;
                 break;
 
-              case 16:
-                _context.prev = 16;
-                _context.t0 = _context["catch"](2);
+              case 15:
+                _context.prev = 15;
+                _context.t0 = _context["catch"](1);
 
                 _iterator.e(_context.t0);
 
-              case 19:
-                _context.prev = 19;
+              case 18:
+                _context.prev = 18;
 
                 _iterator.f();
 
-                return _context.finish(19);
+                return _context.finish(18);
 
-              case 22:
+              case 21:
               case "end":
                 return _context.stop();
             }
           }
-        }, _callee, null, [[2, 16, 19, 22]]);
+        }, _callee, null, [[1, 15, 18, 21]]);
       }))();
     }
   }
@@ -74108,6 +74138,40 @@ var render = function() {
       ? _c(
           "div",
           [
+            _c("div", { staticClass: "card mb-3" }, [
+              _c("div", { staticClass: "card-body" }, [
+                this.textProcessingProgress < 100
+                  ? _c("div", { staticClass: "my-2" }, [
+                      _c("p", { staticClass: "h5" }, [
+                        _vm._v(
+                          "\n            Memroses teks untuk memperoleh rekomendasi koreksi (" +
+                            _vm._s(this.textProcessingProgress) +
+                            "%)\n          "
+                        )
+                      ]),
+                      _vm._v(" "),
+                      _c("div", { staticClass: "progress" }, [
+                        _c(
+                          "div",
+                          {
+                            staticClass: "progress-bar",
+                            style: { width: this.textProcessingProgress + "%" },
+                            attrs: {
+                              role: "progressbar",
+                              "aria-valuenow":
+                                this.textProcessingProgress + "%",
+                              "aria-valuemin": "0",
+                              "aria-valuemax": "100"
+                            }
+                          },
+                          [_vm._v(" Processing...\n            ")]
+                        )
+                      ])
+                    ])
+                  : _vm._e()
+              ])
+            ]),
+            _vm._v(" "),
             _c("editor", {
               ref: "vue_editor",
               attrs: {

@@ -9,7 +9,7 @@ use App\SimilaritasJaroWinkler;
 use App\Word;
 use Illuminate\Support\Collection;
 use NlpTools\Tokenizers\TokenizerInterface;
-use NlpTools\Tokenizers\WhitespaceAndPunctuationTokenizer;
+use NlpTools\Tokenizers\WhitespaceTokenizer;
 
 class RekomendatorKoreksiEjaan
 {
@@ -20,23 +20,13 @@ class RekomendatorKoreksiEjaan
     public string $text;
     public array $tokens;
 
-    public Collection $dictionary;
     public TokenizerInterface $tokenizer;
 
     public function __construct(string $text)
     {
-        $this->dictionary = $this->getDictionary();
-        $this->tokenizer = new WhitespaceAndPunctuationTokenizer();
+        $this->tokenizer = new WhitespaceTokenizer();
         $this->text = $text;
         $this->preprocess();
-    }
-
-    public function getDictionary(): Collection
-    {
-        return Word::query()
-            ->select("content")
-            ->get()
-            ->keyBy("content");
     }
 
     private function preprocess()
@@ -47,11 +37,6 @@ class RekomendatorKoreksiEjaan
 
     private function filterTokens(array $tokens): array
     {
-        $tokens = array_map(
-            fn($token) => preg_replace('/\W/', '', $token),
-            $tokens
-        );
-
         $tokens = array_values(array_filter(
             $tokens,
             fn($token) => strlen($token) > 0
@@ -104,7 +89,10 @@ class RekomendatorKoreksiEjaan
     public function getRecommendations(string $cleanedToken, ?string $prev_word_1, ?string $prev_word_2): array
     {
         $most_similar_words = $this->getMostSimilarWords($cleanedToken, self::MAX_RECOMMENDATIONS)->pluck("points", "word");
+        ray()->send($most_similar_words);
+
         $most_frequent_ngram_frequencies = $this->getMostFrequentNgramFrequencies($prev_word_1, $prev_word_2)->pluck("points", "word");
+        ray()->send($most_frequent_ngram_frequencies);
 
         return (new Collection())
             ->merge($most_similar_words->keys())
@@ -126,7 +114,7 @@ class RekomendatorKoreksiEjaan
     {
         $cachedSimilarWords = SimilaritasJaroWinkler::query()
             ->select([
-                "word_a AS word",
+                "word_b AS word",
                 "similaritas AS points"
             ])
             ->where("word_a", "=", $incorrectWord)

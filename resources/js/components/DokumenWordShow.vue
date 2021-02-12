@@ -1,6 +1,28 @@
 <template>
   <div>
     <div v-if="dokumen">
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="my-2" v-if="this.textProcessingProgress < 100">
+            <p class="h5">
+              Memroses teks untuk memperoleh rekomendasi koreksi ({{ this.textProcessingProgress }}%)
+            </p>
+
+            <div class="progress">
+              <div class="progress-bar"
+                   role="progressbar"
+                   :style="{width: `${this.textProcessingProgress}%`}"
+                   :aria-valuenow="`${this.textProcessingProgress}%`"
+                   aria-valuemin="0"
+                   aria-valuemax="100"
+              > Processing...
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <editor
           ref="vue_editor"
           v-model="dokumen.konten_html"
@@ -57,12 +79,20 @@ export default {
       dokumen: null,
       recommendations: {},
       processableTextPieces: [],
-      processedCount: 0,
+      processedTextPiecesCount: 0,
     }
+  },
+
+  computed: {
+      textProcessingProgress() {
+        return Math.round(this.processedTextPiecesCount / this.processableTextPieces.length * 100)
+      }
   },
 
   methods: {
     markTokensThatHasSpellingError: function (editor, token) {
+      console.log(token)
+
       const markerClass = "has-spelling-error"
       let editorContent = editor.getContent()
 
@@ -84,8 +114,7 @@ export default {
 
     getProcessableTextPieces: function (editor) {
       let processableTextPieces = []
-
-      var walker = new tinymce.dom.TreeWalker(editor.dom.getRoot());
+      let walker = new tinymce.dom.TreeWalker(editor.dom.getRoot());
 
       do {
         let node = walker.current()
@@ -108,41 +137,43 @@ export default {
 
     onEditorInit(e) {
       let editor = e.target
-
       // let token = "ALICE"
       // this.markTokensThatHasSpellingError(editor, token);
       this.processableTextPieces = chunk(this.getProcessableTextPieces(editor), 15)
-
-      this.obtainRecommendations()
+      this.fetchRecommendationsFromServer()
     },
 
-    async obtainRecommendations() {
-      let getSpellingRecommendations = text => {
-        return axios.post(this.recommenderUrl, {
-          text: text
-        })
-      }
+    getSpellingRecommendations(text) {
+      return axios.post(this.recommenderUrl, {
+        text: text
+      })
+    },
 
+    async fetchRecommendationsFromServer() {
       for (const textTokens of this.processableTextPieces) {
         const text = textTokens
             .map(token => token
                 .replace(new RegExp("[^\\w]*$", "gm"), '')
                 .replace(new RegExp("^[^\\w]*", "gm"), '')
             )
-            .filter(token => token.length > 0)
+            .filter(token => token.length > 1)
             .filter(token => !this.recommendations.hasOwnProperty(token.toLowerCase())
-        ).join(' ')
+            ).join(' ')
 
-        console.log(text)
-
-        const recommendationData = await getSpellingRecommendations(text)
+        const recommendationData = await this.getSpellingRecommendations(text)
 
         recommendationData.data.forEach(recommendationDatum => {
           if (this.recommendations.hasOwnProperty(recommendationDatum.token)) {
             return;
           }
+
           this.recommendations[recommendationDatum.token] = recommendationDatum.recommendations
+          // this.markTokensThatHasSpellingError(
+          //     this.$refs.vue_editor.editor,
+          //     recommendationDatum.token,
+          // )
         })
+        ++this.processedTextPiecesCount
       }
     }
   }
