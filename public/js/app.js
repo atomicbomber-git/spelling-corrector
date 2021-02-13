@@ -4424,8 +4424,6 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 //
 //
 //
-//
-//
 
 
 
@@ -4561,11 +4559,11 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                     return;
                   }
 
-                  _this2.tokenWithErrors[recommendationDatum.token] = {
+                  _this2.$set(_this2.tokenWithErrors, recommendationDatum.token, {
                     correction: null,
                     selectedRecommendation: null,
                     recommendations: recommendationDatum.recommendations
-                  };
+                  });
 
                   _this2.markTokensThatHasSpellingError(_this2.$refs.vue_editor.editor, recommendationDatum.token);
                 });
@@ -74431,13 +74429,11 @@ var staticRenderFns = [
     var _c = _vm._self._c || _h
     return _c("thead", [
       _c("tr", [
-        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Word ")]),
+        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Kata ")]),
         _vm._v(" "),
-        _c("th", { staticStyle: { width: "100%" } }, [
-          _vm._v(" Recommendations ")
-        ]),
+        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Rekomendasi ")]),
         _vm._v(" "),
-        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Correction ")])
+        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Koreksi ")])
       ])
     ])
   }

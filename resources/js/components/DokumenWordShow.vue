@@ -1,18 +1,16 @@
 <template>
   <div>
     <div v-if="dokumen">
-
       <div class="card mb-3">
         <div class="card-body">
-
           <!-- Corrections / Recommendations -->
           <div style="height: 200px; overflow-y: scroll">
             <table class="table table-sm table-striped" style="table-layout: fixed">
               <thead>
                 <tr>
-                  <th style="width: 100%"> Word </th>
-                  <th style="width: 100%"> Recommendations </th>
-                  <th style="width: 100%"> Correction </th>
+                  <th style="width: 100%"> Kata </th>
+                  <th style="width: 100%"> Rekomendasi </th>
+                  <th style="width: 100%"> Koreksi </th>
                 </tr>
               </thead>
 
@@ -236,11 +234,11 @@ export default {
             return;
           }
 
-          this.tokenWithErrors[recommendationDatum.token] = {
+          this.$set(this.tokenWithErrors, recommendationDatum.token, {
             correction: null,
             selectedRecommendation: null,
             recommendations: recommendationDatum.recommendations
-          }
+          })
 
           this.markTokensThatHasSpellingError(
               this.$refs.vue_editor.editor,
