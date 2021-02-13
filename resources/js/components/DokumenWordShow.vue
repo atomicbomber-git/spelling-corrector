@@ -4,18 +4,69 @@
 
       <div class="card mb-3">
         <div class="card-body">
-          <div class="my-2" v-if="this.textProcessingProgress < 100">
+
+          <!-- Corrections / Recommendations -->
+          <div style="height: 200px; overflow-y: scroll">
+            <table class="table table-sm table-striped" style="table-layout: fixed">
+              <thead>
+                <tr>
+                  <th style="width: 100%"> Word </th>
+                  <th style="width: 100%"> Recommendations </th>
+                  <th style="width: 100%"> Correction </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr
+                    v-for="(tokenWithError, tokenString) in tokenWithErrors"
+                    :key="tokenString"
+                >
+                  <td> {{ tokenString }} </td>
+                  <td>
+                    <select
+                        v-model="tokenWithError.selectedRecommendation"
+                        class="form-control form-control-sm"
+                        @change="onCorrectionRecommendationChange(tokenWithError)"
+                    >
+                      <option
+                          v-for="(recommendation, recIndex) in tokenWithError.recommendations"
+                          :value="recommendation"
+                          :key="recIndex"
+                      >
+                        {{ recommendation }}
+                      </option>
+                    </select>
+                  </td>
+                  <td>
+                    <label class="sr-only" :for="`input_correction_${tokenString}`">
+                        Correction
+                    </label>
+                    <input
+                        class="form-control form-control-sm"
+                        v-model="tokenWithError.correction"
+                        :id="`input_correction_${tokenString}`"
+                        type="text">
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Progress bar -->
+          <div v-if="this.textProcessingProgress < 100"
+               class="my-2"
+          >
             <p class="h5">
               Memroses teks untuk memperoleh rekomendasi koreksi ({{ this.textProcessingProgress }}%)
             </p>
 
             <div class="progress">
-              <div class="progress-bar"
-                   role="progressbar"
+              <div :aria-valuenow="`${this.textProcessingProgress}%`"
                    :style="{width: `${this.textProcessingProgress}%`}"
-                   :aria-valuenow="`${this.textProcessingProgress}%`"
-                   aria-valuemin="0"
                    aria-valuemax="100"
+                   aria-valuemin="0"
+                   class="progress-bar"
+                   role="progressbar"
               > Processing...
               </div>
             </div>
@@ -77,38 +128,54 @@ export default {
   data() {
     return {
       dokumen: null,
-      recommendations: {},
+      tokenWithErrors: {},
       processableTextPieces: [],
       processedTextPiecesCount: 0,
     }
   },
 
   computed: {
-      textProcessingProgress() {
-        return Math.round(this.processedTextPiecesCount / this.processableTextPieces.length * 100)
-      }
+    textProcessingProgress() {
+      return Math.round(this.processedTextPiecesCount / this.processableTextPieces.length * 100)
+    }
   },
 
   methods: {
     markTokensThatHasSpellingError: function (editor, token) {
-      console.log(token)
-
       const markerClass = "has-spelling-error"
       let editorContent = editor.getContent()
 
       let tokenPos = editorContent.toLowerCase().indexOf(token.toLowerCase())
       while (tokenPos !== -1) {
-        let tokenAsInContent = editorContent.slice(tokenPos, tokenPos + token.length)
-        let replacement = `<span class="${markerClass}"> ${tokenAsInContent} </span>`
-        let contentLowerHalf = editorContent.slice(0, tokenPos)
-        let contentUpperHalf = editorContent.slice(tokenPos + token.length)
-        let newEditorContent = contentLowerHalf + replacement + contentUpperHalf
-        editor.setContent(newEditorContent)
-        editorContent = newEditorContent
-        tokenPos = editorContent.toLowerCase().indexOf(
-            token.toLowerCase(),
-            tokenPos + replacement.length
-        )
+        if (
+            (tokenPos > 0 && (editorContent[tokenPos - 1] === ' ')) &&
+            (tokenPos < (editorContent.length - 1) && (editorContent[tokenPos + token.length] === ' '))
+        ) {
+          /* If the token is actually surrounded by whitespaces on both sides, treat it as a proper
+          *  token and proceed to mark it using <span> tags
+          * */
+          let tokenAsInContent = editorContent.slice(tokenPos, tokenPos + token.length)
+          let replacement = `<span class="${markerClass}"> ${tokenAsInContent} </span>`
+          let contentLowerHalf = editorContent.slice(0, tokenPos)
+          let contentUpperHalf = editorContent.slice(tokenPos + token.length)
+          let newEditorContent = contentLowerHalf + replacement + contentUpperHalf
+          editor.setContent(newEditorContent)
+          editorContent = newEditorContent
+          tokenPos = editorContent.toLowerCase().indexOf(
+              token.toLowerCase(),
+              tokenPos + replacement.length
+          )
+        } else {
+          /*
+          * Else if the token is not surrounded by whitespaces on both sides,
+          * don't treat it as a token & move on to the next possible token
+          * */
+
+          tokenPos = editorContent.toLowerCase().indexOf(
+              token.toLowerCase(),
+              tokenPos + 1
+          )
+        }
       }
     },
 
@@ -137,9 +204,7 @@ export default {
 
     onEditorInit(e) {
       let editor = e.target
-      // let token = "ALICE"
-      // this.markTokensThatHasSpellingError(editor, token);
-      this.processableTextPieces = chunk(this.getProcessableTextPieces(editor), 15)
+      this.processableTextPieces = chunk(this.getProcessableTextPieces(editor), 30)
       this.fetchRecommendationsFromServer()
     },
 
@@ -147,6 +212,10 @@ export default {
       return axios.post(this.recommenderUrl, {
         text: text
       })
+    },
+
+    onCorrectionRecommendationChange(tokenWithError) {
+      tokenWithError.correction = tokenWithError.selectedRecommendation
     },
 
     async fetchRecommendationsFromServer() {
@@ -157,21 +226,26 @@ export default {
                 .replace(new RegExp("^[^\\w]*", "gm"), '')
             )
             .filter(token => token.length > 1)
-            .filter(token => !this.recommendations.hasOwnProperty(token.toLowerCase())
+            .filter(token => !this.tokenWithErrors.hasOwnProperty(token.toLowerCase())
             ).join(' ')
 
         const recommendationData = await this.getSpellingRecommendations(text)
 
         recommendationData.data.forEach(recommendationDatum => {
-          if (this.recommendations.hasOwnProperty(recommendationDatum.token)) {
+          if (this.tokenWithErrors.hasOwnProperty(recommendationDatum.token)) {
             return;
           }
 
-          this.recommendations[recommendationDatum.token] = recommendationDatum.recommendations
-          // this.markTokensThatHasSpellingError(
-          //     this.$refs.vue_editor.editor,
-          //     recommendationDatum.token,
-          // )
+          this.tokenWithErrors[recommendationDatum.token] = {
+            correction: null,
+            selectedRecommendation: null,
+            recommendations: recommendationDatum.recommendations
+          }
+
+          this.markTokensThatHasSpellingError(
+              this.$refs.vue_editor.editor,
+              recommendationDatum.token,
+          )
         })
         ++this.processedTextPiecesCount
       }

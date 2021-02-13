@@ -4375,6 +4375,57 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 
 
@@ -4397,7 +4448,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   data: function data() {
     return {
       dokumen: null,
-      recommendations: {},
+      tokenWithErrors: {},
       processableTextPieces: [],
       processedTextPiecesCount: 0
     };
@@ -4409,20 +4460,30 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   },
   methods: {
     markTokensThatHasSpellingError: function markTokensThatHasSpellingError(editor, token) {
-      console.log(token);
       var markerClass = "has-spelling-error";
       var editorContent = editor.getContent();
       var tokenPos = editorContent.toLowerCase().indexOf(token.toLowerCase());
 
       while (tokenPos !== -1) {
-        var tokenAsInContent = editorContent.slice(tokenPos, tokenPos + token.length);
-        var replacement = "<span class=\"".concat(markerClass, "\"> ").concat(tokenAsInContent, " </span>");
-        var contentLowerHalf = editorContent.slice(0, tokenPos);
-        var contentUpperHalf = editorContent.slice(tokenPos + token.length);
-        var newEditorContent = contentLowerHalf + replacement + contentUpperHalf;
-        editor.setContent(newEditorContent);
-        editorContent = newEditorContent;
-        tokenPos = editorContent.toLowerCase().indexOf(token.toLowerCase(), tokenPos + replacement.length);
+        if (tokenPos > 0 && editorContent[tokenPos - 1] === ' ' && tokenPos < editorContent.length - 1 && editorContent[tokenPos + token.length] === ' ') {
+          /* If the token is actually surrounded by whitespaces on both sides, treat it as a proper
+          *  token and proceed to mark it using <span> tags
+          * */
+          var tokenAsInContent = editorContent.slice(tokenPos, tokenPos + token.length);
+          var replacement = "<span class=\"".concat(markerClass, "\"> ").concat(tokenAsInContent, " </span>");
+          var contentLowerHalf = editorContent.slice(0, tokenPos);
+          var contentUpperHalf = editorContent.slice(tokenPos + token.length);
+          var newEditorContent = contentLowerHalf + replacement + contentUpperHalf;
+          editor.setContent(newEditorContent);
+          editorContent = newEditorContent;
+          tokenPos = editorContent.toLowerCase().indexOf(token.toLowerCase(), tokenPos + replacement.length);
+        } else {
+          /*
+          * Else if the token is not surrounded by whitespaces on both sides,
+          * don't treat it as a token & move on to the next possible token
+          * */
+          tokenPos = editorContent.toLowerCase().indexOf(token.toLowerCase(), tokenPos + 1);
+        }
       }
     },
     getProcessableTextPieces: function getProcessableTextPieces(editor) {
@@ -4449,16 +4510,17 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       return processableTextPieces;
     },
     onEditorInit: function onEditorInit(e) {
-      var editor = e.target; // let token = "ALICE"
-      // this.markTokensThatHasSpellingError(editor, token);
-
-      this.processableTextPieces = Object(lodash__WEBPACK_IMPORTED_MODULE_4__["chunk"])(this.getProcessableTextPieces(editor), 15);
+      var editor = e.target;
+      this.processableTextPieces = Object(lodash__WEBPACK_IMPORTED_MODULE_4__["chunk"])(this.getProcessableTextPieces(editor), 30);
       this.fetchRecommendationsFromServer();
     },
     getSpellingRecommendations: function getSpellingRecommendations(text) {
       return axios__WEBPACK_IMPORTED_MODULE_1___default.a.post(this.recommenderUrl, {
         text: text
       });
+    },
+    onCorrectionRecommendationChange: function onCorrectionRecommendationChange(tokenWithError) {
+      tokenWithError.correction = tokenWithError.selectedRecommendation;
     },
     fetchRecommendationsFromServer: function fetchRecommendationsFromServer() {
       var _this2 = this;
@@ -4487,7 +4549,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                 }).filter(function (token) {
                   return token.length > 1;
                 }).filter(function (token) {
-                  return !_this2.recommendations.hasOwnProperty(token.toLowerCase());
+                  return !_this2.tokenWithErrors.hasOwnProperty(token.toLowerCase());
                 }).join(' ');
                 _context.next = 8;
                 return _this2.getSpellingRecommendations(text);
@@ -4495,14 +4557,17 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               case 8:
                 recommendationData = _context.sent;
                 recommendationData.data.forEach(function (recommendationDatum) {
-                  if (_this2.recommendations.hasOwnProperty(recommendationDatum.token)) {
+                  if (_this2.tokenWithErrors.hasOwnProperty(recommendationDatum.token)) {
                     return;
                   }
 
-                  _this2.recommendations[recommendationDatum.token] = recommendationDatum.recommendations; // this.markTokensThatHasSpellingError(
-                  //     this.$refs.vue_editor.editor,
-                  //     recommendationDatum.token,
-                  // )
+                  _this2.tokenWithErrors[recommendationDatum.token] = {
+                    correction: null,
+                    selectedRecommendation: null,
+                    recommendations: recommendationDatum.recommendations
+                  };
+
+                  _this2.markTokensThatHasSpellingError(_this2.$refs.vue_editor.editor, recommendationDatum.token);
                 });
                 ++_this2.processedTextPiecesCount;
 
@@ -74140,6 +74205,157 @@ var render = function() {
           [
             _c("div", { staticClass: "card mb-3" }, [
               _c("div", { staticClass: "card-body" }, [
+                _c(
+                  "div",
+                  { staticStyle: { height: "200px", "overflow-y": "scroll" } },
+                  [
+                    _c(
+                      "table",
+                      {
+                        staticClass: "table table-sm table-striped",
+                        staticStyle: { "table-layout": "fixed" }
+                      },
+                      [
+                        _vm._m(0),
+                        _vm._v(" "),
+                        _c(
+                          "tbody",
+                          _vm._l(_vm.tokenWithErrors, function(
+                            tokenWithError,
+                            tokenString
+                          ) {
+                            return _c("tr", { key: tokenString }, [
+                              _c("td", [
+                                _vm._v(" " + _vm._s(tokenString) + " ")
+                              ]),
+                              _vm._v(" "),
+                              _c("td", [
+                                _c(
+                                  "select",
+                                  {
+                                    directives: [
+                                      {
+                                        name: "model",
+                                        rawName: "v-model",
+                                        value:
+                                          tokenWithError.selectedRecommendation,
+                                        expression:
+                                          "tokenWithError.selectedRecommendation"
+                                      }
+                                    ],
+                                    staticClass: "form-control form-control-sm",
+                                    on: {
+                                      change: [
+                                        function($event) {
+                                          var $$selectedVal = Array.prototype.filter
+                                            .call(
+                                              $event.target.options,
+                                              function(o) {
+                                                return o.selected
+                                              }
+                                            )
+                                            .map(function(o) {
+                                              var val =
+                                                "_value" in o
+                                                  ? o._value
+                                                  : o.value
+                                              return val
+                                            })
+                                          _vm.$set(
+                                            tokenWithError,
+                                            "selectedRecommendation",
+                                            $event.target.multiple
+                                              ? $$selectedVal
+                                              : $$selectedVal[0]
+                                          )
+                                        },
+                                        function($event) {
+                                          return _vm.onCorrectionRecommendationChange(
+                                            tokenWithError
+                                          )
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  _vm._l(
+                                    tokenWithError.recommendations,
+                                    function(recommendation, recIndex) {
+                                      return _c(
+                                        "option",
+                                        {
+                                          key: recIndex,
+                                          domProps: { value: recommendation }
+                                        },
+                                        [
+                                          _vm._v(
+                                            "\n                      " +
+                                              _vm._s(recommendation) +
+                                              "\n                    "
+                                          )
+                                        ]
+                                      )
+                                    }
+                                  ),
+                                  0
+                                )
+                              ]),
+                              _vm._v(" "),
+                              _c("td", [
+                                _c(
+                                  "label",
+                                  {
+                                    staticClass: "sr-only",
+                                    attrs: {
+                                      for: "input_correction_" + tokenString
+                                    }
+                                  },
+                                  [
+                                    _vm._v(
+                                      "\n                      Correction\n                  "
+                                    )
+                                  ]
+                                ),
+                                _vm._v(" "),
+                                _c("input", {
+                                  directives: [
+                                    {
+                                      name: "model",
+                                      rawName: "v-model",
+                                      value: tokenWithError.correction,
+                                      expression: "tokenWithError.correction"
+                                    }
+                                  ],
+                                  staticClass: "form-control form-control-sm",
+                                  attrs: {
+                                    id: "input_correction_" + tokenString,
+                                    type: "text"
+                                  },
+                                  domProps: {
+                                    value: tokenWithError.correction
+                                  },
+                                  on: {
+                                    input: function($event) {
+                                      if ($event.target.composing) {
+                                        return
+                                      }
+                                      _vm.$set(
+                                        tokenWithError,
+                                        "correction",
+                                        $event.target.value
+                                      )
+                                    }
+                                  }
+                                })
+                              ])
+                            ])
+                          }),
+                          0
+                        )
+                      ]
+                    )
+                  ]
+                ),
+                _vm._v(" "),
                 this.textProcessingProgress < 100
                   ? _c("div", { staticClass: "my-2" }, [
                       _c("p", { staticClass: "h5" }, [
@@ -74157,11 +74373,11 @@ var render = function() {
                             staticClass: "progress-bar",
                             style: { width: this.textProcessingProgress + "%" },
                             attrs: {
-                              role: "progressbar",
                               "aria-valuenow":
                                 this.textProcessingProgress + "%",
+                              "aria-valuemax": "100",
                               "aria-valuemin": "0",
-                              "aria-valuemax": "100"
+                              role: "progressbar"
                             }
                           },
                           [_vm._v(" Processing...\n            ")]
@@ -74208,7 +74424,24 @@ var render = function() {
       : _c("div", [_vm._v("\n    Loading...\n  ")])
   ])
 }
-var staticRenderFns = []
+var staticRenderFns = [
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("thead", [
+      _c("tr", [
+        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Word ")]),
+        _vm._v(" "),
+        _c("th", { staticStyle: { width: "100%" } }, [
+          _vm._v(" Recommendations ")
+        ]),
+        _vm._v(" "),
+        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Correction ")])
+      ])
+    ])
+  }
+]
 render._withStripped = true
 
 

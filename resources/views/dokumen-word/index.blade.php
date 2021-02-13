@@ -5,6 +5,15 @@
         @lang("application.dokumen_word")
     </h1>
 
+    <div class="my-3 d-flex justify-content-end">
+        <a
+                class="btn btn-primary"
+                href="{{ route("dokumen-word.create") }}"
+        >
+            @lang("application.create")
+        </a>
+    </div>
+
     <div>
         @if($dokumen_words->isNotEmpty())
             <x-table>

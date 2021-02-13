@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\BusinessLogic\RekomendatorKoreksiEjaan;
+use App\Constants\MessageState;
 use App\DokumenWord;
+use App\Support\FileConverter;
+use App\Support\SessionHelper;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use DOMDocument;
 use Illuminate\Routing\ResponseFactory;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use NlpTools\Tokenizers\TokenizerInterface;
-use NlpTools\Tokenizers\WhitespaceAndPunctuationTokenizer;
 use NlpTools\Tokenizers\WhitespaceTokenizer;
 
 class DokumenWordController extends Controller
@@ -40,5 +42,44 @@ class DokumenWordController extends Controller
         return $this->responseFactory->view("dokumen-word.show", [
             "dokumen_word" => $dokumen_word->makeHidden("konten_html"),
         ]);
+    }
+
+    public function create()
+    {
+        return $this->responseFactory->view("dokumen-word.create");
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            "nama" => ["required", "string", "unique:dokumen_word"],
+            "berkas" => ["required", "file", "mimetypes:application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+        ], [
+            "berkas.mimetypes" => "Berkas harus dalam format .docx",
+        ]);
+
+        DB::beginTransaction();
+
+        $dokumenWord = DokumenWord::query()
+            ->create([
+                "user_id" => Auth::id(),
+                "nama" => $data["nama"],
+                "konten_html" => FileConverter::wordToHTML(
+                    $request->file("berkas")->getRealPath(),
+                )
+            ]);
+
+        $dokumenWord
+            ->addMediaFromRequest("berkas")
+            ->toMediaCollection(DokumenWord::COLLECTION_WORD_FILE);
+
+        DB::commit();
+
+        SessionHelper::flashMessage(
+            __("messages.create.success"),
+            MessageState::STATE_SUCCESS,
+        );
+
+        return $this->responseFactory->redirectToRoute("dokumen-word.index");
     }
 }

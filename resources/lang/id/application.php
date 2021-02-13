@@ -10,4 +10,8 @@ return [
     "log_out" => "Keluar",
     "show" => "Detail",
     "content" => "Konten",
+    "create" => "Tambah",
+    "name" => "Nama",
+    "file" => "Berkas",
+    "word_upload_help_text" => "Berkas dokumen dalam format *.docx"
 ];
