@@ -52,6 +52,7 @@
                                         <select
                                             v-model="errorPosition.selectedRecommendation"
                                             class="form-control form-control-sm"
+                                            @change="errorPosition.correction = errorPosition.selectedRecommendation"
                                         >
                                             <option
                                                 v-for="(recommendation, recIndex) in tokenWithError.recommendations"
