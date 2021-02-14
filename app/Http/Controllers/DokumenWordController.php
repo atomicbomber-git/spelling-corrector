@@ -83,7 +83,10 @@ class DokumenWordController extends Controller
             MessageState::STATE_SUCCESS,
         );
 
-        return $this->responseFactory->redirectToRoute("dokumen-word.index");
+        return $this->responseFactory->redirectToRoute(
+            "dokumen-word.show",
+            $dokumenWord
+        );
     }
 
     public function destroy(DokumenWord $dokumen_word)

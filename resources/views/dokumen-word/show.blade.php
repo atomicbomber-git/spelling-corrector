@@ -11,6 +11,8 @@
         @lang("application.show")
     </h1>
 
+    <x-messages/>
+
     <div id="app">
         <dokumen-word-show
                 data-url="{{ route("dokumen-word.show", $dokumen_word)}}"
