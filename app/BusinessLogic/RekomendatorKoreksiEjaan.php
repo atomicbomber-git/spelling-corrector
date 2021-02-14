@@ -22,7 +22,7 @@ class RekomendatorKoreksiEjaan
 
     public TokenizerInterface $tokenizer;
 
-    public function __construct(string $text)
+    public function __construct(array $tokens)
     {
         $this->tokenizer = new RegexTokenizer(
             array_map(fn($pattern) => "/" . preg_quote($pattern) . "/", [
@@ -30,13 +30,14 @@ class RekomendatorKoreksiEjaan
             ])
         );
 
-        $this->text = $text;
+        ray()->send($tokens);
+
+        $this->tokens = $tokens;
         $this->preprocess();
     }
 
     private function preprocess()
     {
-        $this->tokens = $this->tokenizer->tokenize($this->text);
         $this->tokens = $this->filterTokens($this->tokens);
     }
 
