@@ -52,6 +52,13 @@ class DokumenWordController extends Controller
         return $this->responseFactory->view("dokumen-word.create");
     }
 
+    public function edit(DokumenWord $dokumen_word)
+    {
+        return $this->responseFactory->view("dokumen-word.edit", [
+            "dokumen_word" => $dokumen_word,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([

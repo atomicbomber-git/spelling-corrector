@@ -1,6 +1,6 @@
 <nav class="col-md-2 h5" style="font-size: 12pt">
-    <span class="d-block font-weight-bolder text-dark mb-3">
-        MENU
+    <span class="d-block font-weight-bolder text-dark mb-3 text-uppercase">
+        @lang("application.menu")
     </span>
 
     <ul class="nav justify-content-start">
@@ -11,12 +11,12 @@
                 @lang("application.dokumen_word")
             </a>
         </li>
-        <li class="nav-item {{ Route::is("word.*") ? "active" : "" }}">
-            <a class="nav-link pt-0"
-               href="{{ route("word.index") }}"
-            >
-                @lang("application.word_list")
-            </a>
-        </li>
+{{--        <li class="nav-item {{ Route::is("word.*") ? "active" : "" }}">--}}
+{{--            <a class="nav-link pt-0"--}}
+{{--               href="{{ route("word.index") }}"--}}
+{{--            >--}}
+{{--                @lang("application.word_list")--}}
+{{--            </a>--}}
+{{--        </li>--}}
     </ul>
 </nav>

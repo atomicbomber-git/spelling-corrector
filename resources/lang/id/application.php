@@ -1,6 +1,9 @@
 <?php
 
 return [
+    "menu" => "Menu",
+    "edit" => "Ubah",
+    "update" => "Perbarui",
     "created_at" => "Waktu Pembuatan",
     "updated_at" => "Waktu Terakhir Revisi",
     "download" => "Download",
