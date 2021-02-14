@@ -4452,7 +4452,6 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 //
 //
 //
-//
 
 
 
@@ -74508,10 +74507,9 @@ var render = function() {
                   plugins: [
                     "advlist autolink lists link image charmap print preview anchor",
                     "searchreplace visualblocks code fullscreen",
-                    "insertdatetime media table paste code help wordcount",
-                    "textcolor"
+                    "insertdatetime media table paste code help wordcount"
                   ],
-                  toolbar: null
+                  toolbar: false
                 },
                 "api-key": "c3lgkroj62ttb5dfwxx5eeyc7cqkvqwjm6yyrpm0x8xypjnt"
               },
@@ -74537,11 +74535,11 @@ var staticRenderFns = [
     var _c = _vm._self._c || _h
     return _c("thead", { staticClass: "thead thead-dark" }, [
       _c("tr", [
-        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Kata")]),
+        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Kata ")]),
         _vm._v(" "),
-        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Rekomendasi")]),
+        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Rekomendasi ")]),
         _vm._v(" "),
-        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Koreksi")])
+        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Koreksi ")])
       ])
     ])
   }

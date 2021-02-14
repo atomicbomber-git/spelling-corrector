@@ -10,7 +10,6 @@ use App\Word;
 use Illuminate\Support\Collection;
 use NlpTools\Tokenizers\RegexTokenizer;
 use NlpTools\Tokenizers\TokenizerInterface;
-use NlpTools\Tokenizers\WhitespaceTokenizer;
 
 class RekomendatorKoreksiEjaan
 {
@@ -26,7 +25,7 @@ class RekomendatorKoreksiEjaan
     public function __construct(string $text)
     {
         $this->tokenizer = new RegexTokenizer(
-            array_map(fn ($pattern) => "/" .  preg_quote($pattern) . "/",   [
+            array_map(fn($pattern) => "/" . preg_quote($pattern) . "/", [
                 ',', '<', '>', '"', '\'', '(', ')', '.', '!', '?', ' ', ':', ';', '-'
             ])
         );
@@ -95,10 +94,7 @@ class RekomendatorKoreksiEjaan
     public function getRecommendations(string $cleanedToken, ?string $prev_word_1, ?string $prev_word_2): array
     {
         $most_similar_words = $this->getMostSimilarWords($cleanedToken, self::MAX_RECOMMENDATIONS)->pluck("points", "word");
-        ray()->send($most_similar_words);
-
         $most_frequent_ngram_frequencies = $this->getMostFrequentNgramFrequencies($prev_word_1, $prev_word_2)->pluck("points", "word");
-        ray()->send($most_frequent_ngram_frequencies);
 
         return (new Collection())
             ->merge($most_similar_words->keys())

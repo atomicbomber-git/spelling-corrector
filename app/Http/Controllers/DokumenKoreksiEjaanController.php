@@ -51,7 +51,7 @@ class DokumenKoreksiEjaanController extends Controller
             foreach ($replacementPairs as $original => $replacement) {
                 if (strtolower($original) === strtolower($replacement)) continue;
 
-                $original = preg_quote($original);
+                $original = preg_quote($original, "/");
                 $delimiter = $this->getWordDelimitersRegex();
 
                 $documentContent = StringUtil::replaceAllRegex(

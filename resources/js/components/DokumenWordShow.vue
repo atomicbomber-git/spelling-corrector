@@ -20,9 +20,9 @@
                         >
                             <thead class="thead thead-dark">
                             <tr>
-                                <th style="width: 100%"> Kata</th>
-                                <th style="width: 100%"> Rekomendasi</th>
-                                <th style="width: 100%"> Koreksi</th>
+                                <th style="width: 100%"> Kata </th>
+                                <th style="width: 100%"> Rekomendasi </th>
+                                <th style="width: 100%"> Koreksi </th>
                             </tr>
                             </thead>
 
@@ -115,9 +115,8 @@
            'advlist autolink lists link image charmap print preview anchor',
            'searchreplace visualblocks code fullscreen',
            'insertdatetime media table paste code help wordcount',
-           'textcolor',
          ],
-         toolbar: null,
+         toolbar: false,
        }"
                 api-key="c3lgkroj62ttb5dfwxx5eeyc7cqkvqwjm6yyrpm0x8xypjnt"
                 @onInit="onEditorInit"

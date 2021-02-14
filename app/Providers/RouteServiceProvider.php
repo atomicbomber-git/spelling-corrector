@@ -27,8 +27,6 @@ class RouteServiceProvider extends ServiceProvider
 
     public static function home()
     {
-        ray()->send(auth()->user()->toArray());
-
         switch (auth()->user()->level ?? null) {
             case User::LEVEL_MAHASISWA:
                 return route("dokumen-word.index");
