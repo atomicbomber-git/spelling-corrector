@@ -9,6 +9,7 @@ return [
     "download" => "Download",
     "number_symbol" => "No.",
     "dokumen_word" => "Dokumen Word",
+    "mahasiswa" => "Mahasiswa",
     "word_list" => "Word List",
     "controls" => "Kendali",
     "title" => "Judul",
@@ -18,6 +19,11 @@ return [
     "content" => "Konten",
     "create" => "Tambah",
     "name" => "Nama",
+    "real_name" => "Nama Asli",
+    "username" => "Nama Pengguna",
+    "student_id" => "NIM",
     "file" => "Berkas",
-    "word_upload_help_text" => "Berkas dokumen dalam format *.docx"
+    "word_upload_help_text" => "Berkas dokumen dalam format *.docx",
+    "password" => "Kata Sandi",
+    "password_confirmation" => "Konfirmasi Kata Sandi",
 ];

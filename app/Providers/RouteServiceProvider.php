@@ -33,7 +33,7 @@ class RouteServiceProvider extends ServiceProvider
             case User::LEVEL_MAHASISWA:
                 return route("dokumen-word.index");
             case User::LEVEL_ADMIN:
-                return route("dokumen-word.index");
+                return route("mahasiswa.index");
             default:
                 return route("dokumen-word.index");
         }

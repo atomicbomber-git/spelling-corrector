@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\User;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -26,12 +27,12 @@ class MahasiswaSeeder extends Seeder
             ->delete();
 
         foreach (range(1, self::COUNT + 1) as $counter) {
-            User::query()->create([
-                "name" => self::PREFIX . $counter,
-                "username" => self::PREFIX . $counter,
-                "password" => Hash::make(self::PREFIX . $counter),
-                "level" => User::LEVEL_MAHASISWA,
-            ]);
+            UserFactory::new()
+                ->mahasiswa()
+                ->create([
+                    "username" => self::PREFIX . $counter,
+                    "password" => Hash::make(self::PREFIX . $counter),
+                ]);
         }
 
         DB::commit();

@@ -4,6 +4,7 @@ use App\Http\Controllers\DokumenWordController;
 use App\Http\Controllers\DokumenWordDownloadController;
 use App\Http\Controllers\ImportWordsFromDocumentController;
 use App\Http\Controllers\DokumenKoreksiEjaanController;
+use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\RekomendasiPembenaranController;
 use App\Http\Controllers\WordController;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +26,7 @@ Auth::routes([
 ]);
 
 Route::redirect("/", "/login");
+Route::resource("mahasiswa", class_basename(MahasiswaController::class));
 Route::resource("dokumen-word", class_basename(DokumenWordController::class));
 Route::get("dokumen-word/{dokumen_word}/download", class_basename(DokumenWordDownloadController::class))->name("dokumen-word.download");
 Route::post("dokumen-word/{dokumen_word}/koreksi", class_basename(DokumenKoreksiEjaanController::class))->name("dokumen-word.koreksi-ejaan");
