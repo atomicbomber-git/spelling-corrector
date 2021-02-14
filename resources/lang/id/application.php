@@ -3,6 +3,7 @@
 return [
     "created_at" => "Waktu Pembuatan",
     "updated_at" => "Waktu Terakhir Revisi",
+    "download" => "Download",
     "number_symbol" => "No.",
     "dokumen_word" => "Dokumen Word",
     "word_list" => "Word List",

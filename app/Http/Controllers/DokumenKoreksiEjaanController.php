@@ -10,7 +10,7 @@ use Illuminate\Routing\ResponseFactory;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpWord\Shared\ZipArchive;
 
-class KoreksiEjaanController extends Controller
+class DokumenKoreksiEjaanController extends Controller
 {
     private ResponseFactory $responseFactory;
 
