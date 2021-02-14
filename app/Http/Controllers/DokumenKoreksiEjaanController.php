@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\DokumenWord;
 use App\Support\FileConverter;
+use App\Support\MessageState;
+use App\Support\SessionHelper;
 use App\Support\StringUtil;
 use Illuminate\Http\Request;
 use Illuminate\Routing\ResponseFactory;
@@ -68,6 +70,11 @@ class DokumenKoreksiEjaanController extends Controller
         $dokumen_word->update([
             "konten_html" => FileConverter::wordToHTML($docxFilepath)
         ]);
+
+        SessionHelper::flashMessage(
+            __("messages.update.success"),
+            MessageState::STATE_SUCCESS,
+        );
 
         return $this->responseFactory->noContent(200);
     }

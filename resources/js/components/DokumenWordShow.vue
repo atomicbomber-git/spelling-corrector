@@ -12,7 +12,8 @@
                     <!-- Corrections / Recommendations -->
                     <div
                         v-if="Object.keys(this.tokenWithErrors).length > 0"
-                        style="height: 200px; overflow-y: scroll">
+                        style="height: 200px; overflow-y: scroll"
+                    >
                         <table
                             class="table table-sm table-striped"
                             style="table-layout: fixed"
@@ -65,8 +66,9 @@
                     </div>
 
                     <div
+                        v-if="Object.keys(this.tokenWithErrors).length === 0"
                         class="alert alert-success"
-                        v-if="Object.keys(this.tokenWithErrors).length === 0">
+                    >
                         Tidak terdapat kesalahan pengejaan sama sekali.
                     </div>
 
@@ -93,7 +95,8 @@
 
                 <div
                     v-if="Object.keys(this.tokenWithErrors).length > 0"
-                    class="card-footer d-flex justify-content-end">
+                    class="card-footer d-flex justify-content-end"
+                >
                     <button class="btn btn-primary">
                         Perbarui
                     </button>
@@ -103,20 +106,18 @@
             <editor
                 ref="vue_editor"
                 v-model="dokumen.konten_html"
+                :disabled="true"
                 :init="{
+                    menubar: false,
             content_style: '.has-spelling-error{text-decoration: underline;text-decoration-color: red;}',
          height: 640,
-         menubar: true,
          plugins: [
            'advlist autolink lists link image charmap print preview anchor',
            'searchreplace visualblocks code fullscreen',
            'insertdatetime media table paste code help wordcount',
            'textcolor',
          ],
-         toolbar:
-           'undo redo | formatselect | bold italic forecolor backcolor | \
-           alignleft aligncenter alignright alignjustify | \
-           bullist numlist outdent indent | removeformat | help'
+         toolbar: null,
        }"
                 api-key="c3lgkroj62ttb5dfwxx5eeyc7cqkvqwjm6yyrpm0x8xypjnt"
                 @onInit="onEditorInit"

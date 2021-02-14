@@ -11,6 +11,7 @@ use Illuminate\Http\Response;
 use Illuminate\Routing\ResponseFactory;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use NlpTools\Tokenizers\TokenizerInterface;
 use NlpTools\Tokenizers\WhitespaceTokenizer;
 
@@ -94,6 +95,45 @@ class DokumenWordController extends Controller
             "dokumen-word.show",
             $dokumenWord
         );
+    }
+
+    public function update(Request $request, DokumenWord $dokumen_word)
+    {
+        $data = $request->validate([
+            "nama" => ["required", "string", Rule::unique(DokumenWord::class)->ignoreModel($dokumen_word)],
+            "berkas" => ["nullable", "file", "mimetypes:application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+        ], [
+            "berkas.mimetypes" => "Berkas harus dalam format .docx",
+        ]);
+
+        DB::beginTransaction();
+
+        $dokumen_word->fill([
+            "nama" => $data["nama"]
+        ]);
+
+        if ($request->hasFile("berkas")) {
+            $dokumen_word->fill([
+                "konten_html" => FileConverter::wordToHTML(
+                    $request->file("berkas")->getRealPath(),
+                )
+            ]);
+
+            $dokumen_word
+                ->addMediaFromRequest("berkas")
+                ->toMediaCollection(DokumenWord::COLLECTION_WORD_FILE);
+        }
+
+        $dokumen_word->save();
+
+        DB::commit();
+
+        SessionHelper::flashMessage(
+            __("messages.update.success"),
+            MessageState::STATE_SUCCESS,
+        );
+
+        return $this->responseFactory->redirectToRoute("dokumen-word.show", $dokumen_word);
     }
 
     public function destroy(DokumenWord $dokumen_word)

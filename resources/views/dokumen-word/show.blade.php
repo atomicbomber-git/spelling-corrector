@@ -14,6 +14,8 @@
     <x-messages/>
 
     <div id="app">
+        <h2> {{ $dokumen_word->nama }} </h2>
+
         <dokumen-word-show
                 data-url="{{ route("dokumen-word.show", $dokumen_word)}}"
                 recommender-url="{{ route("rekomendasi-pembenaran") }}"

@@ -4452,6 +4452,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 //
 //
 //
+//
 
 
 
@@ -74498,21 +74499,19 @@ var render = function() {
             _c("editor", {
               ref: "vue_editor",
               attrs: {
+                disabled: true,
                 init: {
+                  menubar: false,
                   content_style:
                     ".has-spelling-error{text-decoration: underline;text-decoration-color: red;}",
                   height: 640,
-                  menubar: true,
                   plugins: [
                     "advlist autolink lists link image charmap print preview anchor",
                     "searchreplace visualblocks code fullscreen",
                     "insertdatetime media table paste code help wordcount",
                     "textcolor"
                   ],
-                  toolbar:
-                    "undo redo | formatselect | bold italic forecolor backcolor | \
-       alignleft aligncenter alignright alignjustify | \
-       bullist numlist outdent indent | removeformat | help"
+                  toolbar: null
                 },
                 "api-key": "c3lgkroj62ttb5dfwxx5eeyc7cqkvqwjm6yyrpm0x8xypjnt"
               },
