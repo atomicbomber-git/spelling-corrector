@@ -34,15 +34,15 @@
                     <tr>
                         <td> {{ $dokumen_words->firstItem() + $loop->index }} </td>
                         <td> {{ $dokumen_word->nama }} </td>
-                        <td> {{ $dokumen_word->created_at }} </td>
-                        <td> {{ $dokumen_word->updated_at  }} </td>
+                        <td> {{ \App\Support\Formatter::formatDatetime($dokumen_word->created_at) }} </td>
+                        <td> {{ \App\Support\Formatter::formatDatetime($dokumen_word->updated_at)  }} </td>
                         <td class="text-center">
                             <a href="{{ route("dokumen-word.download", $dokumen_word) }}"
                                class="btn btn-primary btn-sm"
                             >
                                 @lang("application.download")
                             </a>
-                            
+
                             <a href="{{ route("dokumen-word.show", $dokumen_word) }}"
                                class="btn btn-primary btn-sm"
                             >
