@@ -15,6 +15,7 @@
         <dokumen-word-show
                 data-url="{{ route("dokumen-word.show", $dokumen_word)}}"
                 recommender-url="{{ route("rekomendasi-pembenaran") }}"
+                corrector-url="{{ route("koreksi-ejaan", $dokumen_word) }}"
         >
 
         </dokumen-word-show>

@@ -5,6 +5,8 @@
         @lang("application.dokumen_word")
     </h1>
 
+    <x-messages></x-messages>
+
     <div class="my-3 d-flex justify-content-end">
         <a
                 class="btn btn-primary"
@@ -21,6 +23,8 @@
                     <tr>
                         <th> @lang("application.number_symbol") </th>
                         <th> @lang("application.title") </th>
+                        <th> @lang("application.created_at") </th>
+                        <th> @lang("application.updated_at") </th>
                         <th class="text-center"> @lang("application.controls") </th>
                     </tr>
                 </x-thead>
@@ -30,6 +34,8 @@
                     <tr>
                         <td> {{ $dokumen_words->firstItem() + $loop->index }} </td>
                         <td> {{ $dokumen_word->nama }} </td>
+                        <td> {{ $dokumen_word->created_at }} </td>
+                        <td> {{ $dokumen_word->updated_at  }} </td>
                         <td class="text-center">
                             <a href="{{ route("dokumen-word.show", $dokumen_word) }}"
                                class="btn btn-primary btn-sm"

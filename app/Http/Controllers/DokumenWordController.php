@@ -29,7 +29,10 @@ class DokumenWordController extends Controller
     public function index(): Response
     {
         return $this->responseFactory->view("dokumen-word.index", [
-            "dokumen_words" => DokumenWord::query()->paginate()
+            "dokumen_words" => DokumenWord::query()
+                ->orderByDesc("updated_at")
+                ->orderByDesc("created_at")
+                ->paginate()
         ]);
     }
 
@@ -77,6 +80,23 @@ class DokumenWordController extends Controller
 
         SessionHelper::flashMessage(
             __("messages.create.success"),
+            MessageState::STATE_SUCCESS,
+        );
+
+        return $this->responseFactory->redirectToRoute("dokumen-word.index");
+    }
+
+    public function destroy(DokumenWord $dokumen_word)
+    {
+        DB::beginTransaction();
+
+        $dokumen_word->media()->delete();
+        $dokumen_word->delete();
+
+        DB::commit();
+
+        SessionHelper::flashMessage(
+            __("messages.update.success"),
             MessageState::STATE_SUCCESS,
         );
 

@@ -22,7 +22,7 @@
           rel="stylesheet">
 </head>
 <body>
-<div id="app">
+<div>
     <x-navbar/>
 
     <main class="container py-4">

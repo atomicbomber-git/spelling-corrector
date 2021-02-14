@@ -4424,6 +4424,34 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 
 
@@ -4434,7 +4462,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   },
   props: {
     dataUrl: String,
-    recommenderUrl: String
+    recommenderUrl: String,
+    correctorUrl: String
   },
   mounted: function mounted() {
     var _this = this;
@@ -4454,16 +4483,41 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   computed: {
     textProcessingProgress: function textProcessingProgress() {
       return Math.round(this.processedTextPiecesCount / this.processableTextPieces.length * 100);
+    },
+    formData: function formData() {
+      var _this2 = this;
+
+      return {
+        correction_list: Object.keys(this.tokenWithErrors).map(function (token) {
+          return {
+            original: token,
+            replacement: _this2.tokenWithErrors[token].correction
+          };
+        })
+      };
     }
   },
   methods: {
+    onFormSubmit: function onFormSubmit() {
+      axios__WEBPACK_IMPORTED_MODULE_1___default.a.post(this.correctorUrl, this.formData).then(function (response) {
+        window.location.reload();
+      })["catch"](function (error) {
+        alert("Gagal merevisi dokumen.");
+      });
+    },
+    isValidLeftDelimiter: function isValidLeftDelimiter(character) {
+      return [' ', '"', '>', '\'', '(', ':'].includes(character);
+    },
+    isValidRightDelimiter: function isValidRightDelimiter(character) {
+      return [' ', '"', '.', ',', '\'', ')', ':', '<', '!', '?'].includes(character);
+    },
     markTokensThatHasSpellingError: function markTokensThatHasSpellingError(editor, token) {
       var markerClass = "has-spelling-error";
       var editorContent = editor.getContent();
       var tokenPos = editorContent.toLowerCase().indexOf(token.toLowerCase());
 
       while (tokenPos !== -1) {
-        if (tokenPos > 0 && editorContent[tokenPos - 1] === ' ' && tokenPos < editorContent.length - 1 && editorContent[tokenPos + token.length] === ' ') {
+        if (tokenPos > 0 && this.isValidLeftDelimiter(editorContent[tokenPos - 1]) && tokenPos < editorContent.length - 1 && this.isValidRightDelimiter(editorContent[tokenPos + token.length])) {
           /* If the token is actually surrounded by whitespaces on both sides, treat it as a proper
           *  token and proceed to mark it using <span> tags
           * */
@@ -4521,7 +4575,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       tokenWithError.correction = tokenWithError.selectedRecommendation;
     },
     fetchRecommendationsFromServer: function fetchRecommendationsFromServer() {
-      var _this2 = this;
+      var _this3 = this;
 
       return _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee() {
         var _iterator, _step, textTokens, text, recommendationData;
@@ -4530,7 +4584,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
-                _iterator = _createForOfIteratorHelper(_this2.processableTextPieces);
+                _iterator = _createForOfIteratorHelper(_this3.processableTextPieces);
                 _context.prev = 1;
 
                 _iterator.s();
@@ -4547,27 +4601,27 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                 }).filter(function (token) {
                   return token.length > 1;
                 }).filter(function (token) {
-                  return !_this2.tokenWithErrors.hasOwnProperty(token.toLowerCase());
+                  return !_this3.tokenWithErrors.hasOwnProperty(token.toLowerCase());
                 }).join(' ');
                 _context.next = 8;
-                return _this2.getSpellingRecommendations(text);
+                return _this3.getSpellingRecommendations(text);
 
               case 8:
                 recommendationData = _context.sent;
                 recommendationData.data.forEach(function (recommendationDatum) {
-                  if (_this2.tokenWithErrors.hasOwnProperty(recommendationDatum.token)) {
+                  if (_this3.tokenWithErrors.hasOwnProperty(recommendationDatum.token)) {
                     return;
                   }
 
-                  _this2.$set(_this2.tokenWithErrors, recommendationDatum.token, {
-                    correction: null,
-                    selectedRecommendation: null,
+                  _this3.$set(_this3.tokenWithErrors, recommendationDatum.token, {
+                    correction: recommendationDatum.recommendations[0],
+                    selectedRecommendation: recommendationDatum.recommendations[0],
                     recommendations: recommendationDatum.recommendations
                   });
 
-                  _this2.markTokensThatHasSpellingError(_this2.$refs.vue_editor.editor, recommendationDatum.token);
+                  _this3.markTokensThatHasSpellingError(_this3.$refs.vue_editor.editor, recommendationDatum.token);
                 });
-                ++_this2.processedTextPiecesCount;
+                ++_this3.processedTextPiecesCount;
 
               case 11:
                 _context.next = 3;
@@ -74201,190 +74255,245 @@ var render = function() {
       ? _c(
           "div",
           [
-            _c("div", { staticClass: "card mb-3" }, [
-              _c("div", { staticClass: "card-body" }, [
-                _c(
-                  "div",
-                  { staticStyle: { height: "200px", "overflow-y": "scroll" } },
-                  [
-                    _c(
-                      "table",
-                      {
-                        staticClass: "table table-sm table-striped",
-                        staticStyle: { "table-layout": "fixed" }
-                      },
-                      [
-                        _vm._m(0),
-                        _vm._v(" "),
-                        _c(
-                          "tbody",
-                          _vm._l(_vm.tokenWithErrors, function(
-                            tokenWithError,
-                            tokenString
-                          ) {
-                            return _c("tr", { key: tokenString }, [
-                              _c("td", [
-                                _vm._v(" " + _vm._s(tokenString) + " ")
-                              ]),
+            _c(
+              "form",
+              {
+                staticClass: "d-block card mb-3",
+                on: {
+                  submit: function($event) {
+                    $event.preventDefault()
+                    return _vm.onFormSubmit($event)
+                  }
+                }
+              },
+              [
+                _c("div", { staticClass: "card-header" }, [
+                  _vm._v(
+                    "\n                Rekomendasi Koreksi Ejaan\n            "
+                  )
+                ]),
+                _vm._v(" "),
+                _c("div", { staticClass: "card-body" }, [
+                  Object.keys(this.tokenWithErrors).length > 0
+                    ? _c(
+                        "div",
+                        {
+                          staticStyle: {
+                            height: "200px",
+                            "overflow-y": "scroll"
+                          }
+                        },
+                        [
+                          _c(
+                            "table",
+                            {
+                              staticClass: "table table-sm table-striped",
+                              staticStyle: { "table-layout": "fixed" }
+                            },
+                            [
+                              _vm._m(0),
                               _vm._v(" "),
-                              _c("td", [
-                                _c(
-                                  "select",
-                                  {
-                                    directives: [
-                                      {
-                                        name: "model",
-                                        rawName: "v-model",
-                                        value:
-                                          tokenWithError.selectedRecommendation,
-                                        expression:
-                                          "tokenWithError.selectedRecommendation"
-                                      }
-                                    ],
-                                    staticClass: "form-control form-control-sm",
-                                    on: {
-                                      change: [
-                                        function($event) {
-                                          var $$selectedVal = Array.prototype.filter
-                                            .call(
-                                              $event.target.options,
-                                              function(o) {
-                                                return o.selected
-                                              }
-                                            )
-                                            .map(function(o) {
-                                              var val =
-                                                "_value" in o
-                                                  ? o._value
-                                                  : o.value
-                                              return val
-                                            })
-                                          _vm.$set(
-                                            tokenWithError,
-                                            "selectedRecommendation",
-                                            $event.target.multiple
-                                              ? $$selectedVal
-                                              : $$selectedVal[0]
-                                          )
-                                        },
-                                        function($event) {
-                                          return _vm.onCorrectionRecommendationChange(
-                                            tokenWithError
-                                          )
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  _vm._l(
-                                    tokenWithError.recommendations,
-                                    function(recommendation, recIndex) {
-                                      return _c(
-                                        "option",
+                              _c(
+                                "tbody",
+                                _vm._l(_vm.tokenWithErrors, function(
+                                  tokenWithError,
+                                  tokenString
+                                ) {
+                                  return _c("tr", { key: tokenString }, [
+                                    _c("td", [
+                                      _vm._v(" " + _vm._s(tokenString))
+                                    ]),
+                                    _vm._v(" "),
+                                    _c("td", [
+                                      _c(
+                                        "select",
                                         {
-                                          key: recIndex,
-                                          domProps: { value: recommendation }
+                                          directives: [
+                                            {
+                                              name: "model",
+                                              rawName: "v-model",
+                                              value:
+                                                tokenWithError.selectedRecommendation,
+                                              expression:
+                                                "tokenWithError.selectedRecommendation"
+                                            }
+                                          ],
+                                          staticClass:
+                                            "form-control form-control-sm",
+                                          on: {
+                                            change: [
+                                              function($event) {
+                                                var $$selectedVal = Array.prototype.filter
+                                                  .call(
+                                                    $event.target.options,
+                                                    function(o) {
+                                                      return o.selected
+                                                    }
+                                                  )
+                                                  .map(function(o) {
+                                                    var val =
+                                                      "_value" in o
+                                                        ? o._value
+                                                        : o.value
+                                                    return val
+                                                  })
+                                                _vm.$set(
+                                                  tokenWithError,
+                                                  "selectedRecommendation",
+                                                  $event.target.multiple
+                                                    ? $$selectedVal
+                                                    : $$selectedVal[0]
+                                                )
+                                              },
+                                              function($event) {
+                                                return _vm.onCorrectionRecommendationChange(
+                                                  tokenWithError
+                                                )
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        _vm._l(
+                                          tokenWithError.recommendations,
+                                          function(recommendation, recIndex) {
+                                            return _c(
+                                              "option",
+                                              {
+                                                key: recIndex,
+                                                domProps: {
+                                                  value: recommendation
+                                                }
+                                              },
+                                              [
+                                                _vm._v(
+                                                  "\n                                        " +
+                                                    _vm._s(recommendation) +
+                                                    "\n                                    "
+                                                )
+                                              ]
+                                            )
+                                          }
+                                        ),
+                                        0
+                                      )
+                                    ]),
+                                    _vm._v(" "),
+                                    _c("td", [
+                                      _c(
+                                        "label",
+                                        {
+                                          staticClass: "sr-only",
+                                          attrs: {
+                                            for:
+                                              "input_correction_" + tokenString
+                                          }
                                         },
                                         [
                                           _vm._v(
-                                            "\n                      " +
-                                              _vm._s(recommendation) +
-                                              "\n                    "
+                                            "\n                                    Correction\n                                "
                                           )
                                         ]
-                                      )
-                                    }
-                                  ),
-                                  0
-                                )
-                              ]),
-                              _vm._v(" "),
-                              _c("td", [
-                                _c(
-                                  "label",
-                                  {
-                                    staticClass: "sr-only",
-                                    attrs: {
-                                      for: "input_correction_" + tokenString
-                                    }
-                                  },
-                                  [
-                                    _vm._v(
-                                      "\n                      Correction\n                  "
-                                    )
-                                  ]
-                                ),
-                                _vm._v(" "),
-                                _c("input", {
-                                  directives: [
-                                    {
-                                      name: "model",
-                                      rawName: "v-model",
-                                      value: tokenWithError.correction,
-                                      expression: "tokenWithError.correction"
-                                    }
-                                  ],
-                                  staticClass: "form-control form-control-sm",
-                                  attrs: {
-                                    id: "input_correction_" + tokenString,
-                                    type: "text"
-                                  },
-                                  domProps: {
-                                    value: tokenWithError.correction
-                                  },
-                                  on: {
-                                    input: function($event) {
-                                      if ($event.target.composing) {
-                                        return
-                                      }
-                                      _vm.$set(
-                                        tokenWithError,
-                                        "correction",
-                                        $event.target.value
-                                      )
-                                    }
-                                  }
-                                })
-                              ])
-                            ])
-                          }),
-                          0
-                        )
-                      ]
-                    )
-                  ]
-                ),
-                _vm._v(" "),
-                this.textProcessingProgress < 100
-                  ? _c("div", { staticClass: "my-2" }, [
-                      _c("p", { staticClass: "h5" }, [
+                                      ),
+                                      _vm._v(" "),
+                                      _c("input", {
+                                        directives: [
+                                          {
+                                            name: "model",
+                                            rawName: "v-model",
+                                            value: tokenWithError.correction,
+                                            expression:
+                                              "tokenWithError.correction"
+                                          }
+                                        ],
+                                        staticClass:
+                                          "form-control form-control-sm",
+                                        attrs: {
+                                          id: "input_correction_" + tokenString,
+                                          type: "text"
+                                        },
+                                        domProps: {
+                                          value: tokenWithError.correction
+                                        },
+                                        on: {
+                                          input: function($event) {
+                                            if ($event.target.composing) {
+                                              return
+                                            }
+                                            _vm.$set(
+                                              tokenWithError,
+                                              "correction",
+                                              $event.target.value
+                                            )
+                                          }
+                                        }
+                                      })
+                                    ])
+                                  ])
+                                }),
+                                0
+                              )
+                            ]
+                          )
+                        ]
+                      )
+                    : _vm._e(),
+                  _vm._v(" "),
+                  Object.keys(this.tokenWithErrors).length === 0
+                    ? _c("div", { staticClass: "alert alert-success" }, [
                         _vm._v(
-                          "\n            Memroses teks untuk memperoleh rekomendasi koreksi (" +
-                            _vm._s(this.textProcessingProgress) +
-                            "%)\n          "
-                        )
-                      ]),
-                      _vm._v(" "),
-                      _c("div", { staticClass: "progress" }, [
-                        _c(
-                          "div",
-                          {
-                            staticClass: "progress-bar",
-                            style: { width: this.textProcessingProgress + "%" },
-                            attrs: {
-                              "aria-valuenow":
-                                this.textProcessingProgress + "%",
-                              "aria-valuemax": "100",
-                              "aria-valuemin": "0",
-                              role: "progressbar"
-                            }
-                          },
-                          [_vm._v(" Processing...\n            ")]
+                          "\n                    Tidak terdapat kesalahan pengejaan sama sekali.\n                "
                         )
                       ])
-                    ])
+                    : _vm._e(),
+                  _vm._v(" "),
+                  this.textProcessingProgress < 100
+                    ? _c("div", { staticClass: "my-2" }, [
+                        _c("p", { staticClass: "h5" }, [
+                          _vm._v(
+                            "\n                        Memroses teks untuk memperoleh rekomendasi koreksi (" +
+                              _vm._s(this.textProcessingProgress) +
+                              "%)\n                    "
+                          )
+                        ]),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "progress" }, [
+                          _c(
+                            "div",
+                            {
+                              staticClass: "progress-bar",
+                              style: {
+                                width: this.textProcessingProgress + "%"
+                              },
+                              attrs: {
+                                "aria-valuenow":
+                                  this.textProcessingProgress + "%",
+                                "aria-valuemax": "100",
+                                "aria-valuemin": "0",
+                                role: "progressbar"
+                              }
+                            },
+                            [_vm._v(" Processing...\n                        ")]
+                          )
+                        ])
+                      ])
+                    : _vm._e()
+                ]),
+                _vm._v(" "),
+                Object.keys(this.tokenWithErrors).length > 0
+                  ? _c(
+                      "div",
+                      { staticClass: "card-footer d-flex justify-content-end" },
+                      [
+                        _c("button", { staticClass: "btn btn-primary" }, [
+                          _vm._v(
+                            "\n                    Perbarui\n                "
+                          )
+                        ])
+                      ]
+                    )
                   : _vm._e()
-              ])
-            ]),
+              ]
+            ),
             _vm._v(" "),
             _c("editor", {
               ref: "vue_editor",
@@ -74402,8 +74511,8 @@ var render = function() {
                   ],
                   toolbar:
                     "undo redo | formatselect | bold italic forecolor backcolor | \
-         alignleft aligncenter alignright alignjustify | \
-         bullist numlist outdent indent | removeformat | help"
+       alignleft aligncenter alignright alignjustify | \
+       bullist numlist outdent indent | removeformat | help"
                 },
                 "api-key": "c3lgkroj62ttb5dfwxx5eeyc7cqkvqwjm6yyrpm0x8xypjnt"
               },
@@ -74419,7 +74528,7 @@ var render = function() {
           ],
           1
         )
-      : _c("div", [_vm._v("\n    Loading...\n  ")])
+      : _c("div", [_vm._v("\n        Loading...\n    ")])
   ])
 }
 var staticRenderFns = [
@@ -74427,13 +74536,13 @@ var staticRenderFns = [
     var _vm = this
     var _h = _vm.$createElement
     var _c = _vm._self._c || _h
-    return _c("thead", [
+    return _c("thead", { staticClass: "thead thead-dark" }, [
       _c("tr", [
-        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Kata ")]),
+        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Kata")]),
         _vm._v(" "),
-        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Rekomendasi ")]),
+        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Rekomendasi")]),
         _vm._v(" "),
-        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Koreksi ")])
+        _c("th", { staticStyle: { width: "100%" } }, [_vm._v(" Koreksi")])
       ])
     ])
   }

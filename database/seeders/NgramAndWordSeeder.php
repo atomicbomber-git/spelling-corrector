@@ -10,6 +10,9 @@ use Symfony\Component\Console\Helper\ProgressBar;
 
 class NgramAndWordSeeder extends Seeder
 {
+    private array $lowercasedDictionaryWords;
+    private array $dictionary;
+
     /**
      * Run the database seeds.
      *
@@ -23,7 +26,7 @@ class NgramAndWordSeeder extends Seeder
         $sentence_filenames = scandir($sentence_files_root_dir);
 
         $ngram_frequencies = [];
-        $dictionary = [];
+        $this->dictionary = [];
 
         $this->command->line("Loading data dari file teks kalimat.");
 
@@ -49,8 +52,8 @@ class NgramAndWordSeeder extends Seeder
 
                     $words = explode(' ', $line);
                     foreach ($words as $word) {
-                        $dictionary[$word] ??= 0;
-                        ++$dictionary[$word];
+                        $this->dictionary[$word] ??= 0;
+                        ++$this->dictionary[$word];
                     }
 
                     for ($i = 0; $i < count($words) + 2; ++$i) {
@@ -72,8 +75,8 @@ class NgramAndWordSeeder extends Seeder
             DB::commit();
         }
 
-        $words = array_filter($dictionary, fn($frequency, $word) => $frequency > 3, ARRAY_FILTER_USE_BOTH);
-        $words = array_filter($words, fn($word) => strlen($word) > 1 && $this->digit_ratio($word) < 0.2, ARRAY_FILTER_USE_KEY);
+        $this->dictionary = array_filter($this->dictionary, fn($frequency, $word) => $frequency > 3, ARRAY_FILTER_USE_BOTH);
+        $words = array_filter($this->dictionary, fn($word) => strlen($word) > 1 && $this->digit_ratio($word) < 0.2, ARRAY_FILTER_USE_KEY);
         $words = array_map(fn($word) => ["content" => $word], array_keys($words));
 
         Word::query()->insert($words);
@@ -112,6 +115,15 @@ class NgramAndWordSeeder extends Seeder
         foreach ($ngram_frequencies as $w1 => $word1_subs) {
             foreach ($word1_subs as $w2 => $word2_subs) {
                 foreach ($word2_subs as $w3 => $frequency) {
+
+                    if (!isset(
+                        $this->dictionary[$w1],
+                        $this->dictionary[$w2],
+                        $this->dictionary[$w3],
+                    )) {
+                        continue;
+                    }
+
                     $flattened_ngram_frequency_values[] = [
                         "word1" => $w1 != "" ? $w1 : null,
                         "word2" => $w2 != "" ? $w2 : null,

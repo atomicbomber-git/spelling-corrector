@@ -8,6 +8,7 @@ use App\NgramFrequency;
 use App\SimilaritasJaroWinkler;
 use App\Word;
 use Illuminate\Support\Collection;
+use NlpTools\Tokenizers\RegexTokenizer;
 use NlpTools\Tokenizers\TokenizerInterface;
 use NlpTools\Tokenizers\WhitespaceTokenizer;
 
@@ -24,7 +25,12 @@ class RekomendatorKoreksiEjaan
 
     public function __construct(string $text)
     {
-        $this->tokenizer = new WhitespaceTokenizer();
+        $this->tokenizer = new RegexTokenizer(
+            array_map(fn ($pattern) => "/" .  preg_quote($pattern) . "/",   [
+                ',', '<', '>', '"', '\'', '(', ')', '.', '!', '?', ' ', ':', ';', '-'
+            ])
+        );
+
         $this->text = $text;
         $this->preprocess();
     }
