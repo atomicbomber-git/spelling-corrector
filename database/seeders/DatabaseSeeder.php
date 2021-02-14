@@ -18,6 +18,6 @@ class DatabaseSeeder extends Seeder
 
 //        $this->call(WordSeeder::class);
         $this->call(NgramAndWordSeeder::class);
-        $this->call(DokumenWordSeeder::class);
+//        $this->call(DokumenWordSeeder::class);
     }
 }
