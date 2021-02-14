@@ -43,12 +43,6 @@
                                 @lang("application.edit")
                             </a>
 
-                            <a href="{{ route("mahasiswa.show", $mahasiswa) }}"
-                               class="btn btn-primary btn-sm"
-                            >
-                                @lang("application.show")
-                            </a>
-
                             <form
                                     class="d-inline-block"
                                     x-data="{}"

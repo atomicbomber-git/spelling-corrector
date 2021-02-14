@@ -10,6 +10,7 @@ use App\Support\SessionHelper;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\ResponseFactory;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -99,5 +100,22 @@ class MahasiswaController extends Controller
         );
 
         return $this->responseFactory->redirectToRoute("mahasiswa.edit", $mahasiswa);
+    }
+
+    public function destroy(User $mahasiswa)
+    {
+        DB::beginTransaction();
+
+        $mahasiswa->dokumen_words()->delete();
+        $mahasiswa->delete();
+
+        DB::commit();
+
+        SessionHelper::flashMessage(
+            __("messages.delete.success"),
+            MessageState::STATE_SUCCESS,
+        );
+
+        return $this->responseFactory->redirectToRoute("mahasiswa.index");
     }
 }
