@@ -30,8 +30,6 @@ class RekomendatorKoreksiEjaan
             ])
         );
 
-        ray()->send($tokens);
-
         $this->tokens = $tokens;
         $this->preprocess();
     }

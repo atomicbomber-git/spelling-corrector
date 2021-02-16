@@ -7,10 +7,11 @@ use App\Support\FileConverter;
 use App\Support\MessageState;
 use App\Support\SessionHelper;
 use App\Support\StringUtil;
+use DOMDocument;
 use Illuminate\Http\Request;
 use Illuminate\Routing\ResponseFactory;
 use Illuminate\Support\Collection;
-use PhpOffice\PhpWord\Shared\ZipArchive;
+use Illuminate\Support\Facades\DB;
 
 class DokumenKoreksiEjaanController extends Controller
 {
@@ -42,46 +43,42 @@ class DokumenKoreksiEjaanController extends Controller
             ->pluck("replacements", "original")
             ->toArray();
 
-        $docxFilepath = $dokumen_word->getFirstMediaPath(DokumenWord::COLLECTION_WORD_FILE);
-        $docxAsZipArchive = new ZipArchive();
-        $docxAsZipArchive->open($docxFilepath);
+        $domDocument = new DOMDocument();
+        $domDocument->loadHTML($dokumen_word->konten_html);
 
-        if ($docxAsZipArchive->open($docxFilepath)) {
-            $documentXmlPath = "word/document.xml";
-            $documentContent = $docxAsZipArchive->getFromName($documentXmlPath);
+        foreach ($replacementPairs as $original => $replacements) {
+            $original = preg_quote($original, "/");
 
-            foreach ($replacementPairs as $original => $replacements) {
-                $replacements = array_filter(
-                    $replacements,
-                    fn ($replacement) => strtolower($replacement["correction"]) !== strtolower($original)
-                );
-
-                $replacements = array_map(
-                    fn ($replacement) => array_merge($replacement, [
-                        "correction" => "$1{$replacement['correction']}$3"
-                    ]),
-                    $replacements,
-                );
-
-                $original = preg_quote($original, "/");
-                $delimiter = $this->getWordDelimitersRegex();
-
-                $documentContent = StringUtil::replaceAllRegexMultiple(
-                    "/([{$delimiter}])({$original})([{$delimiter}])/i",
-                    $replacements,
-                    $documentContent
-                );
-            }
-
-            $docxAsZipArchive->addFromString($documentXmlPath, $documentContent);
-            $docxAsZipArchive->close();
-        } else {
-            throw new \Exception("Failed to open docx file.");
+            $domDocument = StringUtil::replaceAllRegexMultipleInXmlNode(
+                "/(\b)({$original})(\b)/i",
+                $replacements,
+                $domDocument,
+            );
         }
 
+        DB::beginTransaction();
+
         $dokumen_word->update([
-            "konten_html" => FileConverter::wordToHTML($docxFilepath)
+            "konten_html" => $domDocument->saveHTML()
         ]);
+
+        /*
+         * Send wrapped HTML content to server, get docx data
+         * Replace current docx data with data obtained from server
+         * */
+        $wrappedHTML = $this->getWrappedHTMLFromDokumenWord($dokumen_word);
+
+        $docxFileContentInStringForm = FileConverter::HTMLToWord($wrappedHTML);
+
+        $dokumen_word
+            ->addMediaFromString($docxFileContentInStringForm)
+            ->usingFileName(
+                pathinfo($dokumen_word->getFirstMediaPath(DokumenWord::COLLECTION_WORD_FILE))["basename"]
+            )
+            ->toMediaCollection(DokumenWord::COLLECTION_WORD_FILE);
+
+
+        DB::commit();
 
         SessionHelper::flashMessage(
             __("messages.update.success"),
@@ -91,10 +88,29 @@ class DokumenKoreksiEjaanController extends Controller
         return $this->responseFactory->noContent(200);
     }
 
-    private function getWordDelimitersRegex(): string
+    /**
+     * @param DokumenWord $dokumen_word
+     * @return string
+     */
+    public function getWrappedHTMLFromDokumenWord(DokumenWord $dokumen_word): string
     {
-        return preg_quote(implode("", [
-            ',', '<', '>', '"', '\'', '(', ')', '.', '!', '?', ' ', ':', ';', '-',
-        ]));
+        return <<<HERE
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+    >
+    <meta http-equiv="X-UA-Compatible"
+          content="ie=edge"
+    >
+    <title> $dokumen_word->nama </title>
+</head>
+<body>
+    $dokumen_word->konten_html
+</body>
+</html>
+HERE;
     }
 }

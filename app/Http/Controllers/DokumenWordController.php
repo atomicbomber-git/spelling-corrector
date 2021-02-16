@@ -31,6 +31,7 @@ class DokumenWordController extends Controller
     {
         return $this->responseFactory->view("dokumen-word.index", [
             "dokumen_words" => DokumenWord::query()
+                ->where("user_id", Auth::id())
                 ->orderByDesc("updated_at")
                 ->orderByDesc("created_at")
                 ->paginate()
