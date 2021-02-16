@@ -41,7 +41,10 @@ class DokumenWordController extends Controller
     public function show(Request $request, DokumenWord $dokumen_word)
     {
         if ($request->ajax()) {
-            return $this->responseFactory->json($dokumen_word);
+            return $this->responseFactory->json([
+                "nama" => $dokumen_word->nama,
+                "konten_html" => $dokumen_word->getHtml()
+            ]);
         }
 
         return $this->responseFactory->view("dokumen-word.show", [
@@ -76,10 +79,13 @@ class DokumenWordController extends Controller
             ->create([
                 "user_id" => Auth::id(),
                 "nama" => $data["nama"],
-                "konten_html" => FileConverter::wordToHTML(
-                    $request->file("berkas")->getRealPath(),
-                )
             ]);
+
+        $dokumenWord->saveHtml(
+            FileConverter::wordToHTML(
+                $request->file("berkas")->getRealPath(),
+            )
+        );
 
         $dokumenWord
             ->addMediaFromRequest("berkas")
@@ -114,11 +120,11 @@ class DokumenWordController extends Controller
         ]);
 
         if ($request->hasFile("berkas")) {
-            $dokumen_word->fill([
-                "konten_html" => FileConverter::wordToHTML(
+            $dokumen_word->saveHtml(
+                FileConverter::wordToHTML(
                     $request->file("berkas")->getRealPath(),
                 )
-            ]);
+            );
 
             $dokumen_word
                 ->addMediaFromRequest("berkas")

@@ -44,7 +44,7 @@ class DokumenKoreksiEjaanController extends Controller
             ->toArray();
 
         $domDocument = new DOMDocument();
-        $domDocument->loadHTML($dokumen_word->konten_html);
+        $domDocument->loadHTML($dokumen_word->getHtml());
 
         foreach ($replacementPairs as $original => $replacements) {
             $original = preg_quote($original, "/");
@@ -58,9 +58,7 @@ class DokumenKoreksiEjaanController extends Controller
 
         DB::beginTransaction();
 
-        $dokumen_word->update([
-            "konten_html" => $domDocument->saveHTML()
-        ]);
+        $dokumen_word->saveHtml($domDocument->saveHTML());
 
         /*
          * Send wrapped HTML content to server, get docx data
@@ -94,6 +92,8 @@ class DokumenKoreksiEjaanController extends Controller
      */
     public function getWrappedHTMLFromDokumenWord(DokumenWord $dokumen_word): string
     {
+        $contentHtml = $dokumen_word->getHtml();
+
         return <<<HERE
 <!doctype html>
 <html lang="en">
@@ -108,7 +108,7 @@ class DokumenKoreksiEjaanController extends Controller
     <title> $dokumen_word->nama </title>
 </head>
 <body>
-    $dokumen_word->konten_html
+    $contentHtml
 </body>
 </html>
 HERE;
