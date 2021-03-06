@@ -11,7 +11,14 @@ body {
   font-family: "Lato", monospace;
 }
 
-.has-spelling-error{text-decoration: underline;text-decoration-color: red;}
+.has-spelling-error {
+  text-decoration: underline;
+  text-decoration-color: red;
+}
+
+.has-highlight {
+  background: yellow;
+}
 
 // Custom rules
 .feature-title {
