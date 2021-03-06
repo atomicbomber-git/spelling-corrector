@@ -12,27 +12,33 @@ class WordXmlProcessor
 {
     public function substituteWords(DOMDocument $xmlDomDocument, SubstitutionList $substitutionList): DOMDocument
     {
+        /* How many times has a particular word been processed? */
         $tally = [];
+
+        /* How many time should a word in a particular node be skipped? */
         $skipMap = [];
+
         $newXmlDomDocument = $xmlDomDocument->cloneNode(true);
 
         /** @var array|WordAndComponentNodesPair[] $wordNodeComponentPairs */
         $wordNodeComponentPairs = $this->getWordAndComponentNodesPair($newXmlDomDocument);
 
         foreach ($wordNodeComponentPairs as $wordNodeComponentPair) {
+            $targetComponentNode = $wordNodeComponentPair->componentNodes[0];
+
             $word = strtolower($wordNodeComponentPair->word);
+            $domNodeHash = spl_object_hash($targetComponentNode->domNode);
 
             $tally[$word] ??= 0;
             $substitution = $substitutionList->getSubstitutionFor($word, $tally[$word]++);
 
-            $targetComponentNode = $wordNodeComponentPair->componentNodes[0];
 
-            $skipMap[spl_object_hash($targetComponentNode->domNode)][$word] ??= 0;
+            $skipMap[$domNodeHash][$word] ??= 0;
             if ($substitution === null) {
-                ++$skipMap[spl_object_hash($targetComponentNode->domNode)][$word];
+                ++$skipMap[$domNodeHash][$word];
                 continue;
             }
-            $skips = $skipMap[spl_object_hash($targetComponentNode->domNode)][$word];
+            $skips = $skipMap[$domNodeHash][$word];
 
             $counter = 0;
             $targetComponentNode->domNode->textContent = preg_replace_callback("/\b$wordNodeComponentPair->word\b/i", function ($match) use ($substitution, &$counter, $skips) {
