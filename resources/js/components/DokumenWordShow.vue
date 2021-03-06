@@ -66,9 +66,9 @@
                         <option
                             v-for="(recommendation, recIndex) in tokenWithError.recommendations"
                             :key="recIndex"
-                            :value="recommendation"
+                            :value="recommendation.word"
                         >
-                          {{ recommendation }}
+                          {{ recommendation.word }} ({{ recommendation.points }})
                         </option>
                       </select>
                     </td>
@@ -290,8 +290,8 @@ export default {
 
               let errorPosition = {
                 index: indexCounters[tokenString],
-                selectedRecommendation: this.tokenWithErrors[tokenString].recommendations[0],
-                correction: this.tokenWithErrors[tokenString].recommendations[0],
+                selectedRecommendation: this.tokenWithErrors[tokenString].recommendations[0].word,
+                correction: this.tokenWithErrors[tokenString].recommendations[0].word,
                 displaySentence: false,
                 node: node,
               }
@@ -437,8 +437,6 @@ export default {
           this.$set(this.tokenWithErrors, recommendationDatum.token, {
             index: this.tokenWithErrorIndexCounter++,
             positions: [],
-            correction: recommendationDatum.recommendations[0],
-            selectedRecommendation: recommendationDatum.recommendations[0],
             recommendations: recommendationDatum.recommendations
           })
         })

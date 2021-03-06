@@ -14,8 +14,8 @@ use NlpTools\Tokenizers\TokenizerInterface;
 class RekomendatorKoreksiEjaan
 {
     public const MAX_RECOMMENDATIONS = 5;
-    public const JARO_WINKLER_WEIGHT = 0.7;
-    public const NGRAM_FREQUENCY_WEIGHT = 0.3;
+    public const JARO_WINKLER_WEIGHT = 0;
+    public const NGRAM_FREQUENCY_WEIGHT = 1;
 
     public string $text;
     public array $tokens;
@@ -93,21 +93,28 @@ class RekomendatorKoreksiEjaan
     public function getRecommendations(string $cleanedToken, ?string $prev_word_1, ?string $prev_word_2): array
     {
         $most_similar_words = $this->getMostSimilarWords($cleanedToken, self::MAX_RECOMMENDATIONS)->pluck("points", "word");
-        $most_frequent_ngram_frequencies = $this->getMostFrequentNgramFrequencies($prev_word_1, $prev_word_2)->pluck("points", "word");
 
-        return (new Collection())
-            ->merge($most_similar_words->keys())
-            ->merge($most_frequent_ngram_frequencies->keys())
-            ->map(function ($word) use ($most_similar_words, $most_frequent_ngram_frequencies) {
+        $ngram_frequencies = NgramFrequency::query()
+            ->select("frequency", "word3")
+            ->where([
+                "word1" => $prev_word_1,
+                "word2" => $prev_word_2,
+            ])->whereIn(
+                "word3",
+                $most_similar_words->keys()->toArray()
+            )->pluck("frequency", "word3");
+
+        $frequency_sum = $ngram_frequencies->sum();
+
+        return $most_similar_words
+            ->map(function ($point, $word) use ($frequency_sum, $ngram_frequencies ) {
                 return [
                     "word" => $word,
-                    "points" =>
-                        ($most_similar_words[$word] ?? 0 * self::JARO_WINKLER_WEIGHT) +
-                        ($most_frequent_ngram_frequencies[$word] ?? 0 * self::NGRAM_FREQUENCY_WEIGHT)
+                    "points" => ($ngram_frequencies[$word] ?? 0) / ($frequency_sum ?: 1),
                 ];
             })
             ->sortByDesc("points")
-            ->pluck("word")
+            ->values()
             ->toArray();
     }
 
@@ -157,15 +164,6 @@ class RekomendatorKoreksiEjaan
                 ->where(["word1" => $word_1, "word2" => $word_2])
                 ->orderByDesc("frequency")
                 ->limit(self::MAX_RECOMMENDATIONS)
-                ->get()
-        );
-
-        $most_frequent_ngram_frequencies->merge(
-            NgramFrequency::query()
-                ->select("word3", "frequency")
-                ->where(["word1" => $word_1, "word2" => $word_2])
-                ->whereIn("word3", $candidates)
-                ->orderByDesc("frequency")
                 ->get()
         );
 
