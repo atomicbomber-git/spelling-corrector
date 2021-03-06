@@ -13,7 +13,7 @@ class ComponentNode
     public function __construct(
         \DOMNode $domNode,
         int $offset,
-        ?int $length,
+        ?int $length
     )
     {
         $this->length = $length;

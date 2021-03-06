@@ -12,7 +12,7 @@ class WordAndComponentNodesPair
 
     public function __construct(
         string $word,
-        array $componentNodes,
+        array $componentNodes
     )
     {
         $this->word = $word;
