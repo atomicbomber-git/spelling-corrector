@@ -2,65 +2,80 @@
 
 namespace Tests\Support;
 
-use App\Support\DomNodeTraverser;
-use App\Support\SimilarityCalculator;
+use App\DocumentProcessing\SubstitutionList;
+use App\DocumentProcessing\WordXmlProcessor;
+use DOMDocument;
 use PHPUnit\Framework\TestCase;
 
-class WordNode {
-    public function __construct(
-        public string $word,
-        public array $nodes,
-    ) {}
-}
 
 class WordHandlerTest extends TestCase
 {
     public function testCanOpenWordDocument()
     {
-        $filePath = __DIR__ . DIRECTORY_SEPARATOR . "temp.txt";
+        $xmlDocumentContent = /** @lang XML */
+            <<<HERE
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            mc:Ignorable="w14 wp14">
+    <w:body>
+        <w:p>
+            <w:pPr>
+                <w:pStyle w:val="Normal"/>
+                <w:bidi w:val="0"/>
+                <w:jc w:val="left"/>
+                <w:rPr></w:rPr>
+            </w:pPr>
+            <w:r>
+                <w:rPr></w:rPr>
+                <w:t>Negsra</w:t>
+                <w:t xml:space="preserve"> Kesatuan</w:t>
+                <w:t xml:space="preserve"> Republik</w:t>
+                <w:t xml:space="preserve"> Indo</w:t>
+                <w:t xml:space="preserve">nei</w:t>
+                <w:t xml:space="preserve">sa</w:t>
+                <w:t xml:space="preserve"> Salph</w:t>
+                <w:t xml:space="preserve"> Salph</w:t>
+                <w:t xml:space="preserve"> Salph</w:t>
+            </w:r>
+        </w:p>
+        <w:sectPr>
+            <w:type w:val="nextPage"/>
+            <w:pgSz w:w="11906" w:h="16838"/>
+            <w:pgMar w:left="1134" w:right="1134" w:header="0" w:top="1134" w:footer="0" w:bottom="1134" w:gutter="0"/>
+            <w:pgNumType w:fmt="decimal"/>
+            <w:formProt w:val="false"/>
+            <w:textDirection w:val="lrTb"/>
+            <w:docGrid w:type="default" w:linePitch="100" w:charSpace="0"/>
+        </w:sectPr>
+    </w:body>
+</w:document>
+HERE;
 
-        $domDocument = new \DOMDocument();
-        $domDocument->loadXML(file_get_contents($filePath));
+        $substitutions = new SubstitutionList();
+        $substitutions->addEntry("Indoneisa", 0, "Batu");
 
-        $wordAndNodes = [];
-        $textAccumulator = "";
-        $nodeAccumulator = [];
+        $processor = new WordXmlProcessor();
+        $domDocument = new DOMDocument();
+        $domDocument->loadXML($xmlDocumentContent);
 
-        DomNodeTraverser::traverse($domDocument, function (\DOMNode $node) use (&$wordAndNodes, &$textAccumulator, &$nodeAccumulator) {
-            if ($node->nodeName === "w:p") {
-                DomNodeTraverser::traverse($node, function (\DOMNode $subNode) use (&$wordAndNodes, &$textAccumulator, &$nodeAccumulator) {
-                    if ($subNode->nodeName === "w:t") {
-                        $nodeAccumulator[] = $subNode->textContent;
 
-                        $text = $subNode->textContent;
+        $zipArchive = new \ZipArchive();
+        $zipResource = $zipArchive->open(__DIR__ . "/article.docx");
+        $pathToDocumentInsideZip = "word/document.xml";
 
-                        for ($i = 0; $i < strlen($text); ++$i) {
-                            if (ctype_alpha($text[$i])) {
-                                $textAccumulator .= $text[$i];
-                            } else {
-                                $wordAndNodes[] = new WordNode(
-                                    $textAccumulator,
-                                    $nodeAccumulator
-                                );
+        if ($zipResource === true) {
+            $fileContentAsText = $zipArchive->getFromName($pathToDocumentInsideZip);
+            $domDocument->loadXML($fileContentAsText);
 
-                                $textAccumulator = "";
-                                $nodeAccumulator = [$subNode->textContent];
-                            }
-                        }
-                    }
-                });
+            $newDocument = $processor->substituteWords($domDocument, $substitutions);
+            $zipArchive->deleteName($pathToDocumentInsideZip);
+            $zipArchive->addFromString($pathToDocumentInsideZip, $newDocument->saveXML());
+            $zipArchive->close();
+        } else {
+            throw new \Exception("Failed to open zip file.");
+        }
 
-                $wordAndNodes[] = new WordNode(
-                    $textAccumulator,
-                    $nodeAccumulator
-                );
 
-                $textAccumulator = "";
-                $nodeAccumulator = [];
-                return false;
-            }
-
-            return true;
-        });
     }
 }

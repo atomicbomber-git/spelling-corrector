@@ -67,7 +67,7 @@ class DokumenWordController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            "nama" => ["required", "string", "unique:dokumen_word"],
+            "nama" => ["required", "string", Rule::unique(DokumenWord::class)->where("user_id", Auth::id())],
             "berkas" => ["required", "file", "mimetypes:application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
         ], [
             "berkas.mimetypes" => "Berkas harus dalam format .docx",
@@ -107,7 +107,7 @@ class DokumenWordController extends Controller
     public function update(Request $request, DokumenWord $dokumen_word)
     {
         $data = $request->validate([
-            "nama" => ["required", "string", Rule::unique(DokumenWord::class)->ignoreModel($dokumen_word)],
+            "nama" => ["required", "string", Rule::unique(DokumenWord::class)->where("user_id", Auth::id())->ignoreModel($dokumen_word)],
             "berkas" => ["nullable", "file", "mimetypes:application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
         ], [
             "berkas.mimetypes" => "Berkas harus dalam format .docx",

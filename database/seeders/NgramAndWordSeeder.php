@@ -79,7 +79,7 @@ class NgramAndWordSeeder extends Seeder
         $words = array_filter($this->dictionary, fn($word) => strlen($word) > 1 && $this->digit_ratio($word) < 0.2, ARRAY_FILTER_USE_KEY);
         $words = array_map(fn($word) => ["content" => $word], array_keys($words));
 
-        Word::query()->insert($words);
+//        Word::query()->insert($words);
 
         $file_loading_progress_bar->finish();
         $flattened_ngram_frequency_values = $this->getFlattenedNgramFrequencyValues($ngram_frequencies);
