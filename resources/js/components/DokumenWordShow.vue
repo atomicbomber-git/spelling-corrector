@@ -337,22 +337,13 @@ export default {
               document.createTextNode(text.slice(prevTextPos))
           )
 
-          matches.forEach(match => {
-            let node = match.errorPosition.node
 
-            node.classList.add('has-highlight')
-            let wrapper = document.createElement("p")
-
-            wrapper.appendChild(node.parentNode.cloneNode(true))
-            node.classList.remove('has-highlight')
-
-            match.errorPosition.node = wrapper
-          })
 
 
           replacementList.push({
             original: node,
             replacement: documentFragment,
+            matches: matches,
           })
         }
       })
@@ -364,6 +355,27 @@ export default {
                   pair.replacement,
                   pair.original,
               )
+
+              pair.matches.forEach(match => {
+                let node = match.errorPosition.node
+
+                node.classList.add('has-highlight')
+
+                let root = node.parentNode
+
+                while (["STRONG", "EM"].includes(root.nodeName)) {
+                  root = root.parentNode
+                }
+
+
+                let wrapper = document.createElement("p")
+                wrapper.appendChild(root.cloneNode(true))
+
+
+                node.classList.remove('has-highlight')
+
+                match.errorPosition.node = wrapper
+              })
             })
           })
     },
