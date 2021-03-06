@@ -32,22 +32,27 @@ class WordXmlProcessor
             $tally[$word] ??= 0;
             $substitution = $substitutionList->getSubstitutionFor($word, $tally[$word]++);
 
-
             $skipMap[$domNodeHash][$word] ??= 0;
             if ($substitution === null) {
                 ++$skipMap[$domNodeHash][$word];
                 continue;
             }
-            $skips = $skipMap[$domNodeHash][$word];
 
-            $counter = 0;
-            $targetComponentNode->domNode->textContent = preg_replace_callback("/\b$wordNodeComponentPair->word\b/i", function ($match) use ($substitution, &$counter, $skips) {
-                return ($counter++ === $skips) ?
-                    $substitution :
-                    $match[0];
-            }, $targetComponentNode->domNode->textContent);
+            if (count($wordNodeComponentPair->componentNodes) === 1) {
 
-            if (count($wordNodeComponentPair->componentNodes) > 1) {
+                $skips = $skipMap[$domNodeHash][$word];
+
+                $counter = 0;
+
+                $targetComponentNode->domNode->textContent = preg_replace_callback("/\b$wordNodeComponentPair->word\b/i", function ($match) use ($substitution, &$counter, $skips) {
+                    return ($counter++ === $skips) ?
+                        $substitution :
+                        $match[0];
+                }, $targetComponentNode->domNode->textContent);
+
+            } else if (count($wordNodeComponentPair->componentNodes) > 1) {
+                $targetComponentNode->domNode->textContent = $substitution;
+
                 for ($i = 1; $i < count($wordNodeComponentPair->componentNodes); ++$i) {
                     $node = $wordNodeComponentPair->componentNodes[$i]->domNode;
                     $node->parentNode->removeChild($node);
