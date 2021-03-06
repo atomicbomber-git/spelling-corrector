@@ -20,31 +20,26 @@ class WordXmlProcessor
         $wordNodeComponentPairs = $this->getWordAndComponentNodesPair($newXmlDomDocument);
 
         foreach ($wordNodeComponentPairs as $wordNodeComponentPair) {
-            $tally[$wordNodeComponentPair->word] ??= 0;
+            $word = strtolower($wordNodeComponentPair->word);
 
-            $substitution = $substitutionList->getSubstitutionFor(
-                strtolower($wordNodeComponentPair->word),
-                $tally[$wordNodeComponentPair->word]++
-            );
+            $tally[$word] ??= 0;
+            $substitution = $substitutionList->getSubstitutionFor($word, $tally[$word]++);
 
             $targetComponentNode = $wordNodeComponentPair->componentNodes[0];
 
+            $skipMap[spl_object_hash($targetComponentNode->domNode)][$word] ??= 0;
             if ($substitution === null) {
-                $skipMap[spl_object_hash($targetComponentNode)][$wordNodeComponentPair->word] ??= 0;
-                ++$skipMap[spl_object_hash($targetComponentNode)][$wordNodeComponentPair->word];
+                ++$skipMap[spl_object_hash($targetComponentNode->domNode)][$word];
                 continue;
             }
-            
-            $skips = $skipMap[spl_object_hash($targetComponentNode)][$wordNodeComponentPair->word] ?? 0;
-            $matches = [];
-            preg_match_all("/{$wordNodeComponentPair->word}/i", $targetComponentNode->domNode->textContent, $matches, PREG_OFFSET_CAPTURE);
-            $offset = $matches[0][$skips][1];
+            $skips = $skipMap[spl_object_hash($targetComponentNode->domNode)][$word];
 
-            $targetComponentNode->domNode->textContent = (
-                substr($targetComponentNode->domNode->textContent, 0, $offset) .
-                $substitution .
-                substr($targetComponentNode->domNode->textContent, $offset + strlen($wordNodeComponentPair->word), null)
-            );
+            $counter = 0;
+            $targetComponentNode->domNode->textContent = preg_replace_callback("/\b$wordNodeComponentPair->word\b/i", function ($match) use ($substitution, &$counter, $skips) {
+                return ($counter++ === $skips) ?
+                    $substitution :
+                    $match[0];
+            }, $targetComponentNode->domNode->textContent);
 
             if (count($wordNodeComponentPair->componentNodes) > 1) {
                 for ($i = 1; $i < count($wordNodeComponentPair->componentNodes); ++$i) {
