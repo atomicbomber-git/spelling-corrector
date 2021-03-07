@@ -3,21 +3,14 @@
 
 namespace App\DocumentProcessing;
 
+use DOMNode;
 
 class ComponentNode
 {
-    public \DOMNode $domNode;
-    public int $offset;
-    public ?int $length;
+    public DOMNode $domNode;
 
-    public function __construct(
-        \DOMNode $domNode,
-        int $offset,
-        ?int $length
-    )
+    public function __construct(DOMNode $domNode)
     {
-        $this->length = $length;
-        $this->offset = $offset;
         $this->domNode = $domNode;
     }
 }

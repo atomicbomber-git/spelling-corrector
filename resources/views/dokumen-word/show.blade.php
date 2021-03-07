@@ -17,11 +17,11 @@
         <h2> {{ $dokumen_word->nama }} </h2>
 
         <dokumen-word-show
+                :corrections='{!! json_encode($corrections) !!}'
                 data-url="{{ route("dokumen-word.show", $dokumen_word)}}"
                 recommender-url="{{ route("rekomendasi-pembenaran") }}"
                 corrector-url="{{ route("dokumen-word.koreksi-ejaan", $dokumen_word) }}"
         >
-
         </dokumen-word-show>
     </div>
 @endsection

@@ -38,23 +38,14 @@
                 </tr>
 
                 <template v-for="(errorPosition, index) in tokenWithError.positions">
-
                   <tr :key="`${tokenString}-${index}`">
-                    <td class="d-flex justify-content-end">
+                    <td>
                       <button
-                          class="btn btn-info btn-sm mr-2"
+                          class="btn btn-sm btn-light"
                           type="button"
                           @click="errorPosition.displaySentence = !errorPosition.displaySentence"
                       >
-                        {{ errorPosition.displaySentence ? "Sembunyikan Kalimat" : "Tampilkan Kalimat" }}
-                      </button>
-
-                      <button
-                          class="btn btn-info btn-sm"
-                          type="button"
-                          @click="jumpIntoText(tokenWithError.index, errorPosition.index)"
-                      >
-                        Arahkan
+                        {{ !errorPosition.displaySentence ? "Tampilkan Kalimat" : "Sembunyikan Kalimat" }}
                       </button>
                     </td>
                     <td>
@@ -64,7 +55,7 @@
                           @change="errorPosition.correction = errorPosition.selectedRecommendation"
                       >
                         <option
-                            v-for="(recommendation, recIndex) in tokenWithError.recommendations"
+                            v-for="(recommendation, recIndex) in errorPosition.recommendations"
                             :key="recIndex"
                             :value="recommendation.word"
                         >
@@ -86,9 +77,10 @@
                       >
                     </td>
                   </tr>
-
-                  <tr v-show="errorPosition.displaySentence" :key="`${tokenString}-${index}-sentence`">
-                    <td class="text-right" colspan="3" v-html="errorPosition.node.outerHTML">
+                  <tr v-if="errorPosition.displaySentence">
+                    <td colspan="3"
+                        v-html="sentenceHtml(tokenString, errorPosition)"
+                    >
                     </td>
                   </tr>
                 </template>
@@ -176,9 +168,56 @@ export default {
     dataUrl: String,
     recommenderUrl: String,
     correctorUrl: String,
+    corrections: Array,
   },
 
   mounted() {
+    let indexCounters = {}
+
+    uniqBy(this.corrections, (correction) => correction.word)
+        .map(correction => correction.word)
+        .forEach(word => {
+          indexCounters[word] = 0
+
+          this.$set(this.tokenWithErrors, word, {
+            index: this.tokenWithErrorIndexCounter++,
+            positions: [],
+          })
+        })
+
+    this.corrections.forEach(correction => {
+      let recommendations = Object
+          .keys(correction.recommendations)
+          .map(word => ({
+            word: word,
+            points: correction.recommendations[word]
+          }))
+
+      this.tokenWithErrors[correction.word].positions.push({
+        index: indexCounters[correction.word]++,
+
+        sentence: correction.sentence,
+        wordPosInSentence: correction.pos_in_sentence,
+        recommendations: recommendations,
+        selectedRecommendation: recommendations[0].word,
+        correction: recommendations[0].word,
+        // selectedRecommendation: null,
+        // correction: null,
+        displaySentence: false,
+      })
+    })
+
+    // let errorPosition = {
+    //   index: indexCounters[tokenString],
+    //   selectedRecommendation: this.tokenWithErrors[tokenString].recommendations[0].word,
+    //   correction: this.tokenWithErrors[tokenString].recommendations[0].word,
+    //   displaySentence: false,
+    //   node: node,
+    // }
+    //
+    // this.tokenWithErrors[tokenString].positions.push(errorPosition)
+
+
     axios.get(this.dataUrl)
         .then(response => {
           this.dokumen = response.data
@@ -222,6 +261,36 @@ export default {
   },
 
   methods: {
+    sentenceHtml(errorToken, errorPosition) {
+      let counter = 0
+      let wordInSentence = null
+      let matches = errorPosition.sentence.matchAll(new RegExp(`\\b${errorToken}\\b`, "gi"))
+
+      for (let match of matches) {
+        if (errorPosition.wordPosInSentence === counter) {
+          wordInSentence = match
+          break
+        }
+        ++counter
+      }
+
+      let paragraph = document.createElement("p")
+      paragraph.appendChild(document.createTextNode(
+          errorPosition.sentence.slice(0, wordInSentence["index"])
+      ))
+      let span = document.createElement("span")
+      span.classList.add("has-highlight", "has-spelling-error")
+
+      span.appendChild(document.createTextNode(wordInSentence[0]))
+      paragraph.appendChild(span)
+
+      paragraph.appendChild(document.createTextNode(
+          errorPosition.sentence.slice(wordInSentence["index"] + errorToken.length)
+      ))
+
+      return paragraph.outerHTML
+    },
+
     symbolPercentage(text) {
       let filtered = text
       filtered = filtered
@@ -338,8 +407,6 @@ export default {
           )
 
 
-
-
           replacementList.push({
             original: node,
             replacement: documentFragment,
@@ -423,9 +490,9 @@ export default {
     },
 
     onEditorInit(e) {
-      let editor = e.target
-      this.processableTextPieces = this.getProcessableTextPieces(editor)
-      this.fetchRecommendationsFromServer()
+      // let editor = e.target
+      // this.processableTextPieces = this.getProcessableTextPieces(editor)
+      // this.fetchRecommendationsFromServer()
     },
 
     getSpellingRecommendations(tokens) {

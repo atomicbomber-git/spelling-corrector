@@ -8,6 +8,7 @@ use App\Http\Controllers\DokumenKoreksiEjaanController;
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\RekomendasiPembenaranController;
 use App\Http\Controllers\WordController;
+use App\Support\DomNodeTraverser;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,23 @@ use Illuminate\Support\Facades\Route;
 Auth::routes([
     "login"
 ]);
+
+Route::get("dokumen-word/{dokumen_word}/debug", function (DokumenWord $dokumen_word) {
+    $xmlRoot = $dokumen_word->getWordXmlDomDocument();
+
+    DomNodeTraverser::traverse($xmlRoot, function (DOMNode $node) {
+        if ($node->nodeName === "w:br") {
+            dump([
+                $node->ownerDocument->saveXML($node),
+                $node->childNodes->count(),
+            ]);
+
+            foreach ($node->childNodes as $childNode) {
+                dump($childNode->nodeName === "w:br");
+            }
+        }
+    });
+});
 
 Route::get("dokumen-word/{dokumen_word}/xml", function (DokumenWord $dokumen_word) {
     $path = $dokumen_word->getFirstMediaPath(DokumenWord::COLLECTION_WORD_FILE);

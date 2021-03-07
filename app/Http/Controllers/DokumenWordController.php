@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Constants\MessageState;
+use App\DocumentProcessing\WordAndComponentNodesPair;
+use App\DocumentProcessing\WordXmlProcessor;
 use App\DokumenWord;
 use App\Support\FileConverter;
 use App\Support\SessionHelper;
+use Barryvdh\Debugbar\LaravelDebugbar;
+use DebugBar\DebugBar;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\ResponseFactory;
@@ -14,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use NlpTools\Tokenizers\TokenizerInterface;
 use NlpTools\Tokenizers\WhitespaceTokenizer;
+use function Symfony\Component\String\s;
 
 class DokumenWordController extends Controller
 {
@@ -47,8 +52,11 @@ class DokumenWordController extends Controller
             ]);
         }
 
+        \debugbar()->disable();
+
         return $this->responseFactory->view("dokumen-word.show", [
             "dokumen_word" => $dokumen_word->makeHidden("konten_html"),
+            "corrections" => (new WordXmlProcessor)->getRecommendations($dokumen_word->getWordXmlDomDocument()),
         ]);
     }
 

@@ -28,6 +28,22 @@ class DokumenWord extends Model implements HasMedia
         return null;
     }
 
+    public function getWordXmlDomDocument(): \DOMDocument
+    {
+        $zipArchive = new \ZipArchive();
+        $zipResource = $zipArchive->open($this->getFirstMediaPath(self::COLLECTION_WORD_FILE));
+
+        $domDocument = new \DOMDocument();
+        if ($zipResource === true) {
+            $domDocument->loadXML($zipArchive->getFromName("word/document.xml"));
+            $zipArchive->close();
+        } else {
+            throw new \Exception("Failed to open zip file.");
+        }
+
+        return $domDocument;
+    }
+
     public function saveHtml(string $htmlString): void
     {
         $this

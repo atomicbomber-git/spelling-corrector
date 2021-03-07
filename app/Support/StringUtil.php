@@ -9,6 +9,18 @@ use Illuminate\Support\Collection;
 
 class StringUtil
 {
+    public static function trimUnicode(string $text): string {
+        $temp = $text;
+        $temp = preg_replace("/^[\p{P}\p{S}]*/u", "", $temp);
+        $temp = preg_replace("/[\p{P}\p{S}]*$/u", "", $temp);
+        return $temp;
+    }
+
+    public static function trimAndLowercaseUnicode(string $text): string
+    {
+        return mb_strtolower(static::trimUnicode($text));
+    }
+
     public static function replaceAllRegexMultipleInXmlNode(string $pattern, array $replacements, DOMNode $domNode): DOMNode
     {
         $replacements = (new Collection($replacements))

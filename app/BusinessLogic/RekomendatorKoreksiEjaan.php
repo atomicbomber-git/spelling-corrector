@@ -153,25 +153,4 @@ class RekomendatorKoreksiEjaan
 
         return $similarWords;
     }
-
-    public function getMostFrequentNgramFrequencies(?string $word_1, ?string $word_2, $candidates = []): Collection
-    {
-        $most_frequent_ngram_frequencies = new Collection();
-
-        $most_frequent_ngram_frequencies = $most_frequent_ngram_frequencies->merge(
-            NgramFrequency::query()
-                ->select("word3", "frequency")
-                ->where(["word1" => $word_1, "word2" => $word_2])
-                ->orderByDesc("frequency")
-                ->limit(self::MAX_RECOMMENDATIONS)
-                ->get()
-        );
-
-        $ngram_frequency_sum = $most_frequent_ngram_frequencies->sum("frequency");
-
-        return $most_frequent_ngram_frequencies->map(fn($ngram_frequency) => [
-            "word" => $ngram_frequency->word3,
-            "points" => $ngram_frequency->frequency / $ngram_frequency_sum,
-        ]);
-    }
 }
