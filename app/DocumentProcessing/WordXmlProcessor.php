@@ -174,9 +174,7 @@ class WordXmlProcessor
                         $sentenceMap[$sentenceIndex] ??= "";
                         $thisComponentNode = new ComponentNode($subNode);
                         $nodeAccumulator[] = $thisComponentNode;
-
                         $previousChar = null;
-
 
                         for ($i = 0; $i < mb_strlen($text); ++$i) {
                             $currentChar = mb_substr($text, $i, 1);
