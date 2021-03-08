@@ -22,9 +22,6 @@ class WordXmlProcessor
         /* How many times has a particular word been processed? */
         $tally = [];
 
-        /* How many time should a word in a particular node be skipped? */
-        $skipMap = [];
-
         $newXmlDomDocument = $xmlDomDocument->cloneNode(true);
 
         /** @var array $substitutionListIndexes */
@@ -42,29 +39,30 @@ class WordXmlProcessor
             ->filter(function (Pair $pair) {
                 return count($pair->componentNodes) > 1;
             })->each(function (Pair $pair) {
-                $rawWord = $pair->rawWord;
-                $lastCharInRawWord = mb_substr($rawWord, mb_strlen($rawWord) - 1);
+                $totalLenOfPrecedingComponentsTextContents = collect($pair->componentNodes)
+                    ->takeUntil(fn(ComponentNode $item, $index) => $index === (count($pair->componentNodes) - 1))
+                    ->sum(fn(ComponentNode $item) => mb_strlen($item->domNode->textContent));
+
                 $lastComponent = $pair->componentNodes[array_key_last($pair->componentNodes)];
                 $firstComponent = $pair->componentNodes[array_key_first($pair->componentNodes)];
 
+                $mergedComponentTextContent = collect($pair->componentNodes)
+                    ->map(fn (ComponentNode $node) => $node->domNode->textContent)
+                    ->join("");
+
+                $absoluteStartOfRawWord = mb_strpos($mergedComponentTextContent, $pair->rawWord);
+                $absoluteEndOfRawWord = $absoluteStartOfRawWord + mb_strlen($pair->rawWord);
                 $accumulatedText = "";
+
                 for ($i = 1; $i < count($pair->componentNodes) - 1; ++$i) {
                     $node = $pair->componentNodes[$i]->domNode;
                     $accumulatedText .= $node->textContent;
                     $node->parentNode->removeChild($node);
                 }
 
-                $posOfLastLetterOfRawWord = mb_strpos($lastComponent->domNode->textContent, $lastCharInRawWord);
-
-                $accumulatedText .= mb_substr(
-                    $lastComponent->domNode->textContent,
-                    0,
-                    $posOfLastLetterOfRawWord + 1,
-                );
-
-                $lastComponent->domNode->textContent = mb_substr($lastComponent->domNode->textContent, $posOfLastLetterOfRawWord + 1);
+                $accumulatedText .= mb_substr($lastComponent->domNode->textContent, 0, $absoluteEndOfRawWord - $totalLenOfPrecedingComponentsTextContents);
                 $firstComponent->domNode->textContent .= $accumulatedText;
-
+                $lastComponent->domNode->textContent = mb_substr($lastComponent->domNode->textContent, $absoluteEndOfRawWord - $totalLenOfPrecedingComponentsTextContents);
 
                 if (mb_strlen($lastComponent->domNode->textContent) === 0) {
                     $lastComponent->domNode->parentNode->removeChild(
@@ -184,6 +182,7 @@ class WordXmlProcessor
                             $currentChar = mb_substr($text, $i, 1);
 
                             if (($i === 0) && (($prevNode->nodeName ?? null) === "w:br")) {
+                                array_pop($nodeAccumulator);
                                 $wordPair = new Pair($wordIndex++, StringUtil::trimAndLowercaseUnicode($textAccumulator), $textAccumulator, $nodeAccumulator, $sentenceIndex);
                                 $wordAndNodes[] = $wordPair;
                                 $hash = spl_object_hash($wordPair);
