@@ -2,80 +2,207 @@
 
 namespace Tests\Support;
 
-use App\DocumentProcessing\SubstitutionList;
-use App\DocumentProcessing\WordXmlProcessor;
+use App\Support\StringUtil;
 use DOMDocument;
+use DOMNode;
+use Exception;
 use PHPUnit\Framework\TestCase;
+use ZipArchive;
+
+class Token
+{
+    public string $value;
+
+    /** @var array|DOMNode[] */
+    public array $domNodes;
+
+    public function __construct(string $value, array $domNodes)
+    {
+        $this->value = $value;
+        $this->domNodes = $domNodes;
+    }
+
+    public function dump()
+    {
+        return [
+            "value" => $this->value,
+            "nodes" => collect($this->domNodes)->map->textContent,
+        ];
+    }
+
+}
+
+class WordXmlExtractor
+{
+    public DOMDocument $wordXmlDomDocument;
+
+    /** @var array | Token[] */
+    public array $tokens = [];
+
+    private string $textAccumulator = "";
+
+    /** @var array | DOMNode[] */
+    private array $domNodeAccumulator = [];
+    private int $currentTagCharIndex;
+
+    private bool $previousLinebreakIsHandled = false;
+    private string $previousChar;
+    private DOMNode $previousNode;
+    private bool $hasEncounteredValidCharInThisNode = false;
+
+    public function load(string $pathToDocxFile)
+    {
+        $zipArchive = new ZipArchive();
+        $zipResource = $zipArchive->open("/home/atomicbomber/Documents/jefri/heavily-formatted.docx");
+        $this->wordXmlDomDocument = new DOMDocument();
+
+        if ($zipResource === true) {
+            $this->wordXmlDomDocument->loadXML(
+                $zipArchive->getFromName("word/document.xml")
+            );
+            $zipArchive->close();
+        } else {
+            throw new Exception("Failed to open zip file.");
+        }
+    }
+
+    public function loadTokens(): array
+    {
+        $this->walk($this->wordXmlDomDocument, function (DOMNode $node) {
+            if ($node->nodeName === "w:p") {
+                $this->walk($node, function (DOMNode $subNode) {
+                    if ($subNode->nodeName === "w:t") {
+                        $this->hasEncounteredValidCharInThisNode = false;
+                        $textContent = $subNode->textContent;
+                        $this->domNodeAccumulator[] = $subNode;
+
+                        for ($this->currentTagCharIndex = 0; $this->currentTagCharIndex < mb_strlen($textContent); ++$this->currentTagCharIndex) {
+                            $currentChar = $this->charAt($textContent, $this->currentTagCharIndex);
+
+                            if ($this->charIsValid($currentChar)) {
+                                if (!$this->hasEncounteredValidCharInThisNode) {
+                                    $this->hasEncounteredValidCharInThisNode = true;
+                                }
+                            }
+
+                            $this->textAccumulator .= $currentChar;
+
+                            if ($this->charIsSeparator($currentChar) || $this->hasUnhandledLinebreak()) {
+                                $this->saveTokenAtStartOrMiddleOfParagraph();
+                                $this->markLinebreakAsHandledIfNeeded();
+                            }
+
+                            $this->previousChar = $currentChar;
+                        }
+                    }
+                    $this->previousNode = $subNode;
+                    $this->markLinebreakAsUnhandledIfNeeded();
+                });
+
+                $this->saveTokenAtTheEndOfParagraph();
+            }
+        });
+
+        return $this->tokens;
+    }
+
+    public function walk(DOMNode $node, callable $callable): void
+    {
+        $callable($node);
+        foreach ($node->childNodes as $childNode) {
+            $this->walk($childNode, $callable);
+        }
+    }
+
+    private function charAt(string $text, int $pos): string
+    {
+        return mb_substr($text, $pos, 1);
+    }
+
+    private function charIsValid(string $char): bool
+    {
+        return (preg_match("/[^\p{P}\p{Z}]/u", $char) > 0);
+    }
+
+    private function charIsSeparator(string $char): bool
+    {
+        return (preg_match("/\p{Z}/u", $char) > 0);
+    }
+
+    public function hasUnhandledLinebreak(): bool
+    {
+        return
+            ($this->previousNode->nodeName === "w:br") &&
+            (!$this->previousLinebreakIsHandled);
+    }
+
+    private function saveTokenAtStartOrMiddleOfParagraph()
+    {
+        $lastCharInTextAccumulator = mb_substr($this->textAccumulator, mb_strlen($this->textAccumulator) - 1, 1);
+
+        $cleanedText = $this->textAccumulator;
+        if ($this->hasUnhandledLinebreak()) {
+            $cleanedText = mb_substr($cleanedText, 0, mb_strlen($cleanedText) - 1);
+        }
+
+        $cleanedText = StringUtil::trimUnicode($cleanedText);
+
+        $domNodesToBeSaved = $this->domNodeAccumulator;
+        if (!$this->hasEncounteredValidCharInThisNode) {
+            array_pop($domNodesToBeSaved);
+        }
+
+        $this->tokens[] = new Token(
+            $cleanedText,
+            $domNodesToBeSaved,
+        );
+
+        $this->textAccumulator = "";
+        $this->domNodeAccumulator = [array_pop($this->domNodeAccumulator)];
+
+        if (!$this->charIsSeparator($lastCharInTextAccumulator)) {
+            $this->textAccumulator .= $lastCharInTextAccumulator;
+        }
+    }
+
+    public function markLinebreakAsHandledIfNeeded(): void
+    {
+        if ($this->previousNode->nodeName === "w:br") {
+            $this->previousLinebreakIsHandled = true;
+        }
+    }
+
+    public function markLinebreakAsUnhandledIfNeeded(): void
+    {
+        if ($this->previousNode->nodeName === "w:br") {
+            $this->previousLinebreakIsHandled = false;
+        }
+    }
+
+    private function saveTokenAtTheEndOfParagraph()
+    {
+        $this->tokens[] = new Token(StringUtil::trimUnicode($this->textAccumulator), $this->domNodeAccumulator);
+        $this->domNodeAccumulator = [];
+        $this->textAccumulator = "";
+    }
+}
 
 
 class WordHandlerTest extends TestCase
 {
+    public function test_char_is_valid()
+    {
+
+    }
+
     public function testCanOpenWordDocument()
     {
-        $xmlDocumentContent = /** @lang XML */
-            <<<HERE
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            mc:Ignorable="w14 wp14">
-    <w:body>
-        <w:p>
-            <w:pPr>
-                <w:pStyle w:val="Normal"/>
-                <w:bidi w:val="0"/>
-                <w:jc w:val="left"/>
-                <w:rPr></w:rPr>
-            </w:pPr>
-            <w:r>
-                <w:rPr></w:rPr>
-                <w:t>Negsra</w:t>
-                <w:t xml:space="preserve"> Kesatuan</w:t>
-                <w:t xml:space="preserve"> Republik</w:t>
-                <w:t xml:space="preserve"> Indo</w:t>
-                <w:t xml:space="preserve">nei</w:t>
-                <w:t xml:space="preserve">sa</w:t>
-                <w:t xml:space="preserve"> Salph</w:t>
-                <w:t xml:space="preserve"> Salph</w:t>
-                <w:t xml:space="preserve"> Salph</w:t>
-            </w:r>
-        </w:p>
-        <w:sectPr>
-            <w:type w:val="nextPage"/>
-            <w:pgSz w:w="11906" w:h="16838"/>
-            <w:pgMar w:left="1134" w:right="1134" w:header="0" w:top="1134" w:footer="0" w:bottom="1134" w:gutter="0"/>
-            <w:pgNumType w:fmt="decimal"/>
-            <w:formProt w:val="false"/>
-            <w:textDirection w:val="lrTb"/>
-            <w:docGrid w:type="default" w:linePitch="100" w:charSpace="0"/>
-        </w:sectPr>
-    </w:body>
-</w:document>
-HERE;
+        $wordXmlExtractor = new WordXmlExtractor();
+        $wordXmlExtractor->load("/home/atomicbomber/Documents/jefri/heavily-formatted.docx");
 
-        $substitutions = new SubstitutionList();
-        $substitutions->addEntry("Indoneisa", 0, "Batu");
-
-        $processor = new WordXmlProcessor();
-        $domDocument = new DOMDocument();
-        $domDocument->loadXML($xmlDocumentContent);
-
-
-        $zipArchive = new \ZipArchive();
-        $zipResource = $zipArchive->open(__DIR__ . "/article.docx");
-        $pathToDocumentInsideZip = "word/document.xml";
-
-        if ($zipResource === true) {
-            $fileContentAsText = $zipArchive->getFromName($pathToDocumentInsideZip);
-            $domDocument->loadXML($fileContentAsText);
-
-            $newDocument = $processor->substituteWords($domDocument, $substitutions);
-            $zipArchive->deleteName($pathToDocumentInsideZip);
-            $zipArchive->addFromString($pathToDocumentInsideZip, $newDocument->saveXML());
-            $zipArchive->close();
-        } else {
-            throw new \Exception("Failed to open zip file.");
+        $tokens = $wordXmlExtractor->loadTokens();
+        foreach ($tokens as $token) {
+            dump($token->dump());
         }
-
-
     }
 }

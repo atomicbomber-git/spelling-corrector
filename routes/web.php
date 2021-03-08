@@ -27,6 +27,10 @@ Auth::routes([
     "login"
 ]);
 
+Route::get('/debug', function () {
+
+});
+
 Route::get("dokumen-word/{dokumen_word}/debug", function (DokumenWord $dokumen_word) {
     $xmlRoot = $dokumen_word->getWordXmlDomDocument();
 

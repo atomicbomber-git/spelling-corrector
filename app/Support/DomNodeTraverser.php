@@ -10,11 +10,10 @@ class DomNodeTraverser
 {
     public static function walk(DOMNode $node, Callable $callable)
     {
-        if ($node->hasChildNodes()) {
-            foreach ($node->childNodes as $childNode) {
-                $callable($childNode);
-                self::walk($childNode, $callable);
-            }
+        $callable($node);
+
+        foreach ($node->childNodes as $childNode) {
+            self::walk($childNode, $callable);
         }
     }
 
