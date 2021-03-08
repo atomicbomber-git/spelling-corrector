@@ -53,7 +53,7 @@ class WordXmlExtractor
     private int $sentenceIndex = 0;
 
     private bool $previousLinebreakIsHandled = false;
-    private string $previousChar;
+    private string $previousChar = "";
     private DOMNode $previousNode;
     private bool $hasEncounteredValidCharInThisNode = false;
     private int $tokenIndex = 0;
@@ -89,33 +89,39 @@ class WordXmlExtractor
                             $currentChar = $this->charAt($textContent, $this->currentTagCharIndex);
                             $this->sentenceAccumulator .= $currentChar;
 
-                            if ($this->charIsValid($currentChar)) {
-                                if (!$this->hasEncounteredValidCharInThisNode) {
-                                    $this->hasEncounteredValidCharInThisNode = true;
+                            /** Skips consecutive spaces */
+                            if (!($this->charIsSeparator($this->previousChar) && $this->charIsSeparator($currentChar))) {
+
+                                /* Have we encountered any valid char in this node? */
+                                if ($this->charIsValid($currentChar)) {
+                                    if (!$this->hasEncounteredValidCharInThisNode) {
+                                        $this->hasEncounteredValidCharInThisNode = true;
+                                    }
                                 }
-                            }
 
-                            $this->textAccumulator .= $currentChar;
+                                $this->textAccumulator .= $currentChar;
 
-                            /* Save normal sentences */
-                            if (($this->charIsSeparator($currentChar) && (($this->previousChar ?? "") === "."))) {
-                                $this->sentences[$this->sentenceIndex] ??= $this->sentenceAccumulator;
-                                $this->sentenceAccumulator = "";
-                                $this->sentenceIndex++;
-                            }
+                                /* Save normal sentences */
+                                if (($this->charIsSeparator($currentChar) && ($this->previousChar === "."))) {
+                                    $this->sentences[$this->sentenceIndex] ??= $this->sentenceAccumulator;
+                                    $this->sentenceAccumulator = "";
+                                    $this->sentenceIndex++;
+                                }
 
-                            /* Save sentences that ends with line breaks */
-                            if ($this->hasUnhandledLinebreak()) {
-                                $lastCharInSentenceAccumulator = mb_substr($this->sentenceAccumulator, mb_strlen($this->sentenceAccumulator) - 1, 1);
-                                $sentenceAccumulatorWithoutLastChar = mb_substr($this->sentenceAccumulator, 0, mb_strlen($this->sentenceAccumulator) - 1);
-                                $this->sentences[$this->sentenceIndex] ??= $sentenceAccumulatorWithoutLastChar;
-                                $this->sentenceAccumulator = $lastCharInSentenceAccumulator;
-                                $this->sentenceIndex++;
-                            }
+                                /* Save sentences that ends with line breaks */
+                                if ($this->hasUnhandledLinebreak()) {
+                                    $lastCharInSentenceAccumulator = mb_substr($this->sentenceAccumulator, mb_strlen($this->sentenceAccumulator) - 1, 1);
+                                    $sentenceAccumulatorWithoutLastChar = mb_substr($this->sentenceAccumulator, 0, mb_strlen($this->sentenceAccumulator) - 1);
+                                    $this->sentences[$this->sentenceIndex] ??= $sentenceAccumulatorWithoutLastChar;
+                                    $this->sentenceAccumulator = $lastCharInSentenceAccumulator;
+                                    $this->sentenceIndex++;
+                                }
 
-                            if ($this->charIsSeparator($currentChar) || $this->hasUnhandledLinebreak()) {
-                                $this->saveTokenAtStartOrMiddleOfParagraph();
-                                $this->markLinebreakAsHandledIfNeeded();
+                                /* Save tokens in the middle of the paragraph */
+                                if ($this->charIsSeparator($currentChar) || $this->hasUnhandledLinebreak()) {
+                                    $this->saveTokenAtStartOrMiddleOfParagraph();
+                                    $this->markLinebreakAsHandledIfNeeded();
+                                }
                             }
 
                             $this->previousChar = $currentChar;
@@ -126,10 +132,7 @@ class WordXmlExtractor
                 });
 
                 $this->saveTokenAtTheEndOfParagraph();
-
-                $this->sentences[$this->sentenceIndex] ??= $this->sentenceAccumulator;
-                $this->sentenceAccumulator = "";
-                $this->sentenceIndex++;
+                $this->saveSentenceAtTheEndOfParagraph();
             }
         });
 
@@ -225,6 +228,11 @@ class WordXmlExtractor
 
     private function saveTokenAtTheEndOfParagraph()
     {
+        /* No-op if text accumulator is empty */
+        if (mb_strlen($this->textAccumulator) === 0) {
+            return;
+        }
+
         $rawTokenValue = $this->trimText($this->textAccumulator);
         $normalizedTokenValue = mb_strtolower($rawTokenValue);
         $this->tokenPositionsInSentence[$normalizedTokenValue][$this->sentenceIndex] ??= 0;
@@ -239,6 +247,18 @@ class WordXmlExtractor
 
         $this->domNodeAccumulator = [];
         $this->textAccumulator = "";
+    }
+
+    public function saveSentenceAtTheEndOfParagraph(): void
+    {
+        /* No-op if sentence accumulator is empty */
+        if (mb_strlen($this->sentenceAccumulator) === 0) {
+            return;
+        }
+
+        $this->sentences[$this->sentenceIndex] ??= $this->sentenceAccumulator;
+        $this->sentenceAccumulator = "";
+        $this->sentenceIndex++;
     }
 }
 
@@ -256,7 +276,9 @@ class WordHandlerTest extends TestCase
         $wordXmlExtractor->load("/home/atomicbomber/Documents/jefri/heavily-formatted.docx");
 
         $tokens = $wordXmlExtractor->tokenize();
-
-        ray()->send($tokens);
+        ray()->send(
+            collect($tokens)
+                ->map->value
+        );
     }
 }
