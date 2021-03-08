@@ -10,27 +10,27 @@ use ZipArchive;
 
 class Token
 {
+    public int $index;
     public string $value;
 
     /** @var array|DOMNode[] */
     public array $domNodes;
     public int $sentenceIndex;
+    public int $posInSentence;
 
-    public function __construct(string $value, array $domNodes, int $sentenceIndex)
+    public function __construct(int $posInSentence, int $index, string $value, array $domNodes, int $sentenceIndex)
     {
         $this->value = $value;
         $this->domNodes = $domNodes;
         $this->sentenceIndex = $sentenceIndex;
+        $this->index = $index;
+        $this->posInSentence = $posInSentence;
     }
 
     public function dump()
     {
-        return [
-            "value" => $this->value,
-            "nodes" => collect($this->domNodes)->map->textContent,
-        ];
+        return json_encode($this, JSON_PRETTY_PRINT);
     }
-
 }
 
 class WordXmlExtractor
@@ -56,6 +56,8 @@ class WordXmlExtractor
     private string $previousChar;
     private DOMNode $previousNode;
     private bool $hasEncounteredValidCharInThisNode = false;
+    private int $tokenIndex = 0;
+    private array $tokenPositionsInSentence = [];
 
     public function load(string $pathToDocxFile)
     {
@@ -73,7 +75,7 @@ class WordXmlExtractor
         }
     }
 
-    public function loadTokens(): array
+    public function tokenize(): array
     {
         $this->walk($this->wordXmlDomDocument, function (DOMNode $node) {
             if ($node->nodeName === "w:p") {
@@ -180,7 +182,12 @@ class WordXmlExtractor
             array_pop($domNodesToBeSaved);
         }
 
+        $normalizedTokenValue = mb_strtolower($cleanedText);
+        $this->tokenPositionsInSentence[$normalizedTokenValue][$this->sentenceIndex] ??= 0;
+
         $this->tokens[] = new Token(
+            $this->tokenPositionsInSentence[$normalizedTokenValue][$this->sentenceIndex]++,
+            $this->tokenIndex++,
             $cleanedText,
             $domNodesToBeSaved,
             $this->sentenceIndex,
@@ -218,7 +225,18 @@ class WordXmlExtractor
 
     private function saveTokenAtTheEndOfParagraph()
     {
-        $this->tokens[] = new Token($this->trimText($this->textAccumulator), $this->domNodeAccumulator, $this->sentenceIndex);
+        $rawTokenValue = $this->trimText($this->textAccumulator);
+        $normalizedTokenValue = mb_strtolower($rawTokenValue);
+        $this->tokenPositionsInSentence[$normalizedTokenValue][$this->sentenceIndex] ??= 0;
+
+        $this->tokens[] = new Token(
+            $this->tokenPositionsInSentence[$normalizedTokenValue][$this->sentenceIndex]++,
+            $this->tokenIndex++,
+            $rawTokenValue,
+            $this->domNodeAccumulator,
+            $this->sentenceIndex
+        );
+
         $this->domNodeAccumulator = [];
         $this->textAccumulator = "";
     }
@@ -237,12 +255,8 @@ class WordHandlerTest extends TestCase
         $wordXmlExtractor = new WordXmlExtractor();
         $wordXmlExtractor->load("/home/atomicbomber/Documents/jefri/heavily-formatted.docx");
 
-        $tokens = $wordXmlExtractor->loadTokens();
+        $tokens = $wordXmlExtractor->tokenize();
 
-        dump($wordXmlExtractor->sentences);
-
-//        foreach ($tokens as $token) {
-//            dump($token->dump());
-//        }
+        ray()->send($tokens);
     }
 }
