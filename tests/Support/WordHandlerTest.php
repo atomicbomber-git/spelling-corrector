@@ -15,6 +15,7 @@ class Token
     public int $sentenceIndex;
     public int $posInSentence;
     public ?int $posInFirstNode = null;
+    public ?string $sentence = null;
     private string $normalizedValue;
 
     public function __construct(int $posInSentence, int $index, string $value, array $domNodes, int $sentenceIndex)
@@ -61,7 +62,7 @@ class OpenXMLTokenizer
     private int $currentTagCharIndex;
     private int $sentenceIndex = 0;
 
-    private bool $previousLinebreakIsHandled = false;
+    private bool $previousLinebreakIsHandled = true;
     private string $previousChar = "";
     private DOMNode $previousNode;
     private bool $hasEncounteredValidCharInThisNode = false;
@@ -82,6 +83,7 @@ class OpenXMLTokenizer
 
         foreach ($tokens as $token) {
             $this->squashTokenDomNodes($token);
+            $token->sentence = $this->sentences[$token->sentenceIndex];
         }
 
         $tokenAndDomNodeCounter = [];
@@ -131,6 +133,11 @@ class OpenXMLTokenizer
                                     $this->sentenceIndex++;
                                 }
 
+                                /* Save tokens in the middle of the paragraph */
+                                if ($this->charIsSeparator($currentChar) || $this->hasUnhandledLinebreak()) {
+                                    $this->saveTokenAtStartOrMiddleOfParagraph();
+                                }
+
                                 /* Save sentences that ends with line breaks */
                                 if ($this->hasUnhandledLinebreak()) {
                                     $lastCharInSentenceAccumulator = mb_substr($this->sentenceAccumulator, mb_strlen($this->sentenceAccumulator) - 1, 1);
@@ -140,11 +147,7 @@ class OpenXMLTokenizer
                                     $this->sentenceIndex++;
                                 }
 
-                                /* Save tokens in the middle of the paragraph */
-                                if ($this->charIsSeparator($currentChar) || $this->hasUnhandledLinebreak()) {
-                                    $this->saveTokenAtStartOrMiddleOfParagraph();
-                                    $this->markLinebreakAsHandledIfNeeded();
-                                }
+                                $this->markLinebreakAsHandledIfNeeded();
                             }
 
                             $this->previousChar = $currentChar;
@@ -158,6 +161,8 @@ class OpenXMLTokenizer
                 $this->saveSentenceAtTheEndOfParagraph();
             }
         });
+
+        ray()->send($this->sentences);
 
         return $this->tokens;
     }
@@ -377,10 +382,7 @@ class WordHandlerTest extends TestCase
                 <w:rPr></w:rPr>
                 <w:t>hello hel</w:t>
                 <w:t>l</w:t>
-                <w:t>o hello</w:t>
-                <w:br/>
-                <!-- Token 3, 4, 5, 6, 7  -->
-                <w:t> Hallo Hallo Hallo Hallo</w:t>
+                <w:t>o hello</w:t><w:br/><w:t> Hallo Hallo Hallo Hallo</w:t>
                 <w:t>ween Hallo</w:t>
             </w:r>
         </w:p>
