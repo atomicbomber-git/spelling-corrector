@@ -52,8 +52,6 @@ class DokumenWordController extends Controller
             ]);
         }
 
-        \debugbar()->disable();
-
         return $this->responseFactory->view("dokumen-word.show", [
             "dokumen_word" => $dokumen_word->makeHidden("konten_html"),
             "corrections" => (new WordXmlProcessor)->getRecommendations($dokumen_word->getWordXmlDomDocument()),

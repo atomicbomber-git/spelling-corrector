@@ -43,7 +43,7 @@
                       <button
                           class="btn btn-sm btn-light"
                           type="button"
-                          @click="errorPosition.displaySentence = !errorPosition.displaySentence"
+                          @click="onDisplaySentenceButtonClick(errorPosition)"
                       >
                         {{ !errorPosition.displaySentence ? "Tampilkan Kalimat" : "Sembunyikan Kalimat" }}
                       </button>
@@ -156,7 +156,7 @@
 import axios from "axios"
 import tinymce from "tinymce"
 import editor from "@tinymce/tinymce-vue"
-import {chunk, uniqBy} from "lodash"
+import {chunk, uniqBy, escapeRegExp} from "lodash"
 import Swal from "sweetalert2";
 
 export default {
@@ -194,8 +194,7 @@ export default {
           }))
 
       this.tokenWithErrors[correction.word].positions.push({
-        index: indexCounters[correction.word]++,
-
+        index: correction.index,
         sentence: correction.sentence,
         wordPosInSentence: correction.pos_in_sentence,
         recommendations: recommendations,
@@ -206,16 +205,6 @@ export default {
         displaySentence: false,
       })
     })
-
-    // let errorPosition = {
-    //   index: indexCounters[tokenString],
-    //   selectedRecommendation: this.tokenWithErrors[tokenString].recommendations[0].word,
-    //   correction: this.tokenWithErrors[tokenString].recommendations[0].word,
-    //   displaySentence: false,
-    //   node: node,
-    // }
-    //
-    // this.tokenWithErrors[tokenString].positions.push(errorPosition)
 
 
     axios.get(this.dataUrl)
@@ -261,10 +250,15 @@ export default {
   },
 
   methods: {
+    onDisplaySentenceButtonClick(errorPosition) {
+      console.log(errorPosition)
+      errorPosition.displaySentence = !errorPosition.displaySentence
+    },
+
     sentenceHtml(errorToken, errorPosition) {
       let counter = 0
       let wordInSentence = null
-      let matches = errorPosition.sentence.matchAll(new RegExp(`\\b${errorToken}\\b`, "gi"))
+      let matches = errorPosition.sentence.matchAll(new RegExp(`\\b${escapeRegExp(errorToken)}\\b`, "ugi"))
 
       for (let match of matches) {
         if (errorPosition.wordPosInSentence === counter) {
