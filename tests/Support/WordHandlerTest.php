@@ -10,12 +10,12 @@ class Token
 {
     public int $index;
     public string $value;
-
     /** @var array|DOMNode[] */
     public array $domNodes;
     public int $sentenceIndex;
     public int $posInSentence;
     public ?int $posInFirstNode = null;
+    private string $normalizedValue;
 
     public function __construct(int $posInSentence, int $index, string $value, array $domNodes, int $sentenceIndex)
     {
@@ -24,11 +24,21 @@ class Token
         $this->sentenceIndex = $sentenceIndex;
         $this->index = $index;
         $this->posInSentence = $posInSentence;
+
+        $this->normalizedValue = mb_strtolower($this->value);
     }
 
     public function dump()
     {
         return json_encode($this, JSON_PRETTY_PRINT);
+    }
+
+    /**
+     * @return string
+     */
+    public function getNormalizedValue(): string
+    {
+        return $this->normalizedValue;
     }
 }
 
@@ -58,43 +68,31 @@ class WordXmlExtractor
     private int $tokenIndex = 0;
     private array $tokenPositionsInSentence = [];
 
-    private function squashTokenDomNodes(Token $token)
-    {
-        /* No-op if $token only has one domNode */
-        if (count($token->domNodes) === 1) {
-            return;
-        }
-
-        $firstDomNode = $token->domNodes[0];
-
-        // Find the last position of a separator in the first component
-        $matches = [];
-        preg_match_all("/\p{Z}/ui", $firstDomNode->textContent, $matches, PREG_OFFSET_CAPTURE);
-        $posOfLastSeparatorInFirstComponent = ($matches[0][array_key_last($matches[0])][1] ?? null);
-
-        $accumulatedText = "";
-        $remainingWordLen = mb_strlen($token->value) - (mb_strlen($firstDomNode->textContent) - ($posOfLastSeparatorInFirstComponent + 1));
-
-        for ($i = 1; $i < (count($token->domNodes) - 1); ++$i) {
-            $accumulatedText .= $token->domNodes[$i]->textContent;
-            $remainingWordLen -= mb_strlen($token->domNodes[$i]->textContent);
-        }
-
-        $lastDomNode = $token->domNodes[array_key_last($token->domNodes)];
-        $accumulatedText .= mb_substr($lastDomNode->textContent, 0, $remainingWordLen);
-
-        $firstDomNode->textContent .= $accumulatedText;
-        $lastDomNode->textContent = mb_substr($lastDomNode->textContent, $remainingWordLen);
-
-        $token->domNodes = [$firstDomNode];
-
-        $quotedValue = preg_quote($token->value);
-        $token->posInFirstNode = preg_match_all("/\b{$quotedValue}\b/ui", $firstDomNode->textContent) - 1;
-    }
-
     public function loadXmlDocument(DOMDocument $xmlDocument)
     {
-        $this->wordXmlDomDocument = $xmlDocument;
+        $this->wordXmlDomDocument = $xmlDocument->cloneNode(true);
+    }
+
+    /**
+     * @return array|Token[]
+     */
+    public function tokenizeAndPrepareForSubstitution(): array
+    {
+        $tokens = $this->tokenize();
+
+        foreach ($tokens as $token) {
+            $this->squashTokenDomNodes($token);
+        }
+
+        $tokenAndDomNodeCounter = [];
+        foreach ($tokens as $token) {
+            $firstDomNodeHash = spl_object_hash($token->domNodes[0]);
+            $tokenAndDomNodeCounter[$token->getNormalizedValue()][$firstDomNodeHash] ??= 0;
+            $token->posInFirstNode = $tokenAndDomNodeCounter[$token->getNormalizedValue()][$firstDomNodeHash];
+            ++$tokenAndDomNodeCounter[$token->getNormalizedValue()][$firstDomNodeHash];
+        }
+
+        return $tokens;
     }
 
     /**
@@ -162,20 +160,6 @@ class WordXmlExtractor
         });
 
         return $this->tokens;
-    }
-
-    /**
-     * @return array|Token[]
-     */
-    public function tokenizeAndSquash(): array
-    {
-        $tokens = $this->tokenize();
-
-        foreach ($tokens as $token) {
-            $this->squashTokenDomNodes($token);
-        }
-
-        return $tokens;
     }
 
     public function walk(DOMNode $node, callable $callable): void
@@ -299,6 +283,40 @@ class WordXmlExtractor
         $this->sentenceAccumulator = "";
         $this->sentenceIndex++;
     }
+
+    private function squashTokenDomNodes(Token $token)
+    {
+        /* No-op if $token only has one domNode */
+        if (count($token->domNodes) === 1) {
+            return;
+        }
+
+        $firstDomNode = $token->domNodes[0];
+
+        // Find the last position of a separator in the first component
+        $matches = [];
+        preg_match_all("/\p{Z}/ui", $firstDomNode->textContent, $matches, PREG_OFFSET_CAPTURE);
+        $posOfLastSeparatorInFirstComponent = ($matches[0][array_key_last($matches[0])][1] ?? null);
+
+        $accumulatedText = "";
+        $remainingWordLen = mb_strlen($token->value) - (mb_strlen($firstDomNode->textContent) - ($posOfLastSeparatorInFirstComponent + 1));
+
+        for ($i = 1; $i < (count($token->domNodes) - 1); ++$i) {
+            $accumulatedText .= $token->domNodes[$i]->textContent;
+            $remainingWordLen -= mb_strlen($token->domNodes[$i]->textContent);
+        }
+
+        $lastDomNode = $token->domNodes[array_key_last($token->domNodes)];
+        $accumulatedText .= mb_substr($lastDomNode->textContent, 0, $remainingWordLen);
+
+        $firstDomNode->textContent .= $accumulatedText;
+        $lastDomNode->textContent = mb_substr($lastDomNode->textContent, $remainingWordLen);
+
+        $token->domNodes = [$firstDomNode];
+
+        $quotedValue = preg_quote($token->value);
+        $token->posInFirstNode = preg_match_all("/\b{$quotedValue}\b/ui", $firstDomNode->textContent) - 1;
+    }
 }
 
 
@@ -309,9 +327,9 @@ class WordHandlerTest extends TestCase
     {
         $extractor = new WordXmlExtractor();
         $extractor->loadXmlDocument($this->getTestXmlForCase1());
-        $tokens = $extractor->tokenizeAndSquash();
+        $tokens = $extractor->tokenizeAndPrepareForSubstitution();
 
-        $this->assertCount(5, $tokens);
+        $this->assertCount(8, $tokens);
         $this->assertEquals("hello", $tokens[0]->value);
         $this->assertEquals(0, $tokens[0]->posInSentence);
         $this->assertEquals(0, $tokens[0]->sentenceIndex);
@@ -321,11 +339,18 @@ class WordHandlerTest extends TestCase
         $this->assertEquals(0, $tokens[1]->sentenceIndex);
 
         $this->assertEquals("hello hello", $tokens[1]->domNodes[0]->textContent);
+        $this->assertEquals(1, $tokens[1]->posInFirstNode);
         $this->assertEquals(" hello", $tokens[2]->domNodes[0]->textContent);
 
         $this->assertEquals("hello", $tokens[2]->value);
         $this->assertEquals(2, $tokens[2]->posInSentence);
         $this->assertEquals(0, $tokens[2]->sentenceIndex);
+
+        $this->assertEquals(0, $tokens[3]->posInFirstNode);
+        $this->assertEquals(1, $tokens[4]->posInFirstNode);
+        $this->assertEquals(2, $tokens[5]->posInFirstNode);
+        $this->assertEquals(0, $tokens[6]->posInFirstNode);
+        $this->assertEquals(0, $tokens[7]->posInFirstNode);
     }
 
     private function getTestXmlForCase1(): DOMDocument
@@ -354,7 +379,9 @@ class WordHandlerTest extends TestCase
                 <w:t>l</w:t>
                 <w:t>o hello</w:t>
                 <w:br/>
-                <w:t> Merry christmas </w:t>
+                <!-- Token 3, 4, 5, 6, 7  -->
+                <w:t> Hallo Hallo Hallo Hallo</w:t>
+                <w:t>ween Hallo</w:t>
             </w:r>
         </w:p>
         <w:sectPr>
