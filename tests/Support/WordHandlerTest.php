@@ -2,7 +2,6 @@
 
 namespace Tests\Support;
 
-use App\Support\StringUtil;
 use DOMDocument;
 use DOMNode;
 use Exception;
@@ -15,11 +14,13 @@ class Token
 
     /** @var array|DOMNode[] */
     public array $domNodes;
+    public int $sentenceIndex;
 
-    public function __construct(string $value, array $domNodes)
+    public function __construct(string $value, array $domNodes, int $sentenceIndex)
     {
         $this->value = $value;
         $this->domNodes = $domNodes;
+        $this->sentenceIndex = $sentenceIndex;
     }
 
     public function dump()
@@ -39,11 +40,17 @@ class WordXmlExtractor
     /** @var array | Token[] */
     public array $tokens = [];
 
+    /** @var array | string[] */
+    public array $sentences;
+
+    private string $sentenceAccumulator = "";
+
     private string $textAccumulator = "";
 
     /** @var array | DOMNode[] */
     private array $domNodeAccumulator = [];
     private int $currentTagCharIndex;
+    private int $sentenceIndex = 0;
 
     private bool $previousLinebreakIsHandled = false;
     private string $previousChar;
@@ -53,7 +60,7 @@ class WordXmlExtractor
     public function load(string $pathToDocxFile)
     {
         $zipArchive = new ZipArchive();
-        $zipResource = $zipArchive->open("/home/atomicbomber/Documents/jefri/heavily-formatted.docx");
+        $zipResource = $zipArchive->open($pathToDocxFile);
         $this->wordXmlDomDocument = new DOMDocument();
 
         if ($zipResource === true) {
@@ -78,6 +85,7 @@ class WordXmlExtractor
 
                         for ($this->currentTagCharIndex = 0; $this->currentTagCharIndex < mb_strlen($textContent); ++$this->currentTagCharIndex) {
                             $currentChar = $this->charAt($textContent, $this->currentTagCharIndex);
+                            $this->sentenceAccumulator .= $currentChar;
 
                             if ($this->charIsValid($currentChar)) {
                                 if (!$this->hasEncounteredValidCharInThisNode) {
@@ -86,6 +94,22 @@ class WordXmlExtractor
                             }
 
                             $this->textAccumulator .= $currentChar;
+
+                            /* Save normal sentences */
+                            if (($this->charIsSeparator($currentChar) && (($this->previousChar ?? "") === "."))) {
+                                $this->sentences[$this->sentenceIndex] ??= $this->sentenceAccumulator;
+                                $this->sentenceAccumulator = "";
+                                $this->sentenceIndex++;
+                            }
+
+                            /* Save sentences that ends with line breaks */
+                            if ($this->hasUnhandledLinebreak()) {
+                                $lastCharInSentenceAccumulator = mb_substr($this->sentenceAccumulator, mb_strlen($this->sentenceAccumulator) - 1, 1);
+                                $sentenceAccumulatorWithoutLastChar = mb_substr($this->sentenceAccumulator, 0, mb_strlen($this->sentenceAccumulator) - 1);
+                                $this->sentences[$this->sentenceIndex] ??= $sentenceAccumulatorWithoutLastChar;
+                                $this->sentenceAccumulator = $lastCharInSentenceAccumulator;
+                                $this->sentenceIndex++;
+                            }
 
                             if ($this->charIsSeparator($currentChar) || $this->hasUnhandledLinebreak()) {
                                 $this->saveTokenAtStartOrMiddleOfParagraph();
@@ -100,6 +124,10 @@ class WordXmlExtractor
                 });
 
                 $this->saveTokenAtTheEndOfParagraph();
+
+                $this->sentences[$this->sentenceIndex] ??= $this->sentenceAccumulator;
+                $this->sentenceAccumulator = "";
+                $this->sentenceIndex++;
             }
         });
 
@@ -145,7 +173,7 @@ class WordXmlExtractor
             $cleanedText = mb_substr($cleanedText, 0, mb_strlen($cleanedText) - 1);
         }
 
-        $cleanedText = StringUtil::trimUnicode($cleanedText);
+        $cleanedText = $this->trimText($cleanedText);
 
         $domNodesToBeSaved = $this->domNodeAccumulator;
         if (!$this->hasEncounteredValidCharInThisNode) {
@@ -155,6 +183,7 @@ class WordXmlExtractor
         $this->tokens[] = new Token(
             $cleanedText,
             $domNodesToBeSaved,
+            $this->sentenceIndex,
         );
 
         $this->textAccumulator = "";
@@ -163,6 +192,14 @@ class WordXmlExtractor
         if (!$this->charIsSeparator($lastCharInTextAccumulator)) {
             $this->textAccumulator .= $lastCharInTextAccumulator;
         }
+    }
+
+    private function trimText(string $text): string
+    {
+        $temp = $text;
+        $temp = preg_replace("/^[\p{P}\p{S}\p{Z}]*/u", "", $temp);
+        $temp = preg_replace("/[\p{P}\p{S}\p{Z}]*$/u", "", $temp);
+        return $temp;
     }
 
     public function markLinebreakAsHandledIfNeeded(): void
@@ -181,7 +218,7 @@ class WordXmlExtractor
 
     private function saveTokenAtTheEndOfParagraph()
     {
-        $this->tokens[] = new Token(StringUtil::trimUnicode($this->textAccumulator), $this->domNodeAccumulator);
+        $this->tokens[] = new Token($this->trimText($this->textAccumulator), $this->domNodeAccumulator, $this->sentenceIndex);
         $this->domNodeAccumulator = [];
         $this->textAccumulator = "";
     }
@@ -201,8 +238,11 @@ class WordHandlerTest extends TestCase
         $wordXmlExtractor->load("/home/atomicbomber/Documents/jefri/heavily-formatted.docx");
 
         $tokens = $wordXmlExtractor->loadTokens();
-        foreach ($tokens as $token) {
-            dump($token->dump());
-        }
+
+        dump($wordXmlExtractor->sentences);
+
+//        foreach ($tokens as $token) {
+//            dump($token->dump());
+//        }
     }
 }
