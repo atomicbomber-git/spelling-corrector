@@ -4,9 +4,7 @@ namespace Tests\Support;
 
 use DOMDocument;
 use DOMNode;
-use Exception;
 use PHPUnit\Framework\TestCase;
-use ZipArchive;
 
 class Token
 {
@@ -17,6 +15,7 @@ class Token
     public array $domNodes;
     public int $sentenceIndex;
     public int $posInSentence;
+    public ?int $posInFirstNode = null;
 
     public function __construct(int $posInSentence, int $index, string $value, array $domNodes, int $sentenceIndex)
     {
@@ -59,22 +58,48 @@ class WordXmlExtractor
     private int $tokenIndex = 0;
     private array $tokenPositionsInSentence = [];
 
-    public function load(string $pathToDocxFile)
+    private function squashTokenDomNodes(Token $token)
     {
-        $zipArchive = new ZipArchive();
-        $zipResource = $zipArchive->open($pathToDocxFile);
-        $this->wordXmlDomDocument = new DOMDocument();
-
-        if ($zipResource === true) {
-            $this->wordXmlDomDocument->loadXML(
-                $zipArchive->getFromName("word/document.xml")
-            );
-            $zipArchive->close();
-        } else {
-            throw new Exception("Failed to open zip file.");
+        /* No-op if $token only has one domNode */
+        if (count($token->domNodes) === 1) {
+            return;
         }
+
+        $firstDomNode = $token->domNodes[0];
+
+        // Find the last position of a separator in the first component
+        $matches = [];
+        preg_match_all("/\p{Z}/ui", $firstDomNode->textContent, $matches, PREG_OFFSET_CAPTURE);
+        $posOfLastSeparatorInFirstComponent = ($matches[0][array_key_last($matches[0])][1] ?? null);
+
+        $accumulatedText = "";
+        $remainingWordLen = mb_strlen($token->value) - (mb_strlen($firstDomNode->textContent) - ($posOfLastSeparatorInFirstComponent + 1));
+
+        for ($i = 1; $i < (count($token->domNodes) - 1); ++$i) {
+            $accumulatedText .= $token->domNodes[$i]->textContent;
+            $remainingWordLen -= mb_strlen($token->domNodes[$i]->textContent);
+        }
+
+        $lastDomNode = $token->domNodes[array_key_last($token->domNodes)];
+        $accumulatedText .= mb_substr($lastDomNode->textContent, 0, $remainingWordLen);
+
+        $firstDomNode->textContent .= $accumulatedText;
+        $lastDomNode->textContent = mb_substr($lastDomNode->textContent, $remainingWordLen);
+
+        $token->domNodes = [$firstDomNode];
+
+        $quotedValue = preg_quote($token->value);
+        $token->posInFirstNode = preg_match_all("/\b{$quotedValue}\b/ui", $firstDomNode->textContent) - 1;
     }
 
+    public function loadXmlDocument(DOMDocument $xmlDocument)
+    {
+        $this->wordXmlDomDocument = $xmlDocument;
+    }
+
+    /**
+     * @return array|Token[]
+     */
     public function tokenize(): array
     {
         $this->walk($this->wordXmlDomDocument, function (DOMNode $node) {
@@ -139,6 +164,20 @@ class WordXmlExtractor
         return $this->tokens;
     }
 
+    /**
+     * @return array|Token[]
+     */
+    public function tokenizeAndSquash(): array
+    {
+        $tokens = $this->tokenize();
+
+        foreach ($tokens as $token) {
+            $this->squashTokenDomNodes($token);
+        }
+
+        return $tokens;
+    }
+
     public function walk(DOMNode $node, callable $callable): void
     {
         $callable($node);
@@ -152,14 +191,14 @@ class WordXmlExtractor
         return mb_substr($text, $pos, 1);
     }
 
-    private function charIsValid(string $char): bool
-    {
-        return (preg_match("/[^\p{P}\p{Z}]/u", $char) > 0);
-    }
-
     private function charIsSeparator(string $char): bool
     {
         return (preg_match("/\p{Z}/u", $char) > 0);
+    }
+
+    private function charIsValid(string $char): bool
+    {
+        return (preg_match("/[^\p{P}\p{Z}]/u", $char) > 0);
     }
 
     public function hasUnhandledLinebreak(): bool
@@ -265,20 +304,114 @@ class WordXmlExtractor
 
 class WordHandlerTest extends TestCase
 {
-    public function test_char_is_valid()
+    /** @test */
+    public function it_can_process_tokens_that_are_split_in_multiple_tags()
     {
+        $extractor = new WordXmlExtractor();
+        $extractor->loadXmlDocument($this->getTestXmlForCase1());
+        $tokens = $extractor->tokenizeAndSquash();
 
+        $this->assertCount(5, $tokens);
+        $this->assertEquals("hello", $tokens[0]->value);
+        $this->assertEquals(0, $tokens[0]->posInSentence);
+        $this->assertEquals(0, $tokens[0]->sentenceIndex);
+
+        $this->assertEquals("hello", $tokens[1]->value);
+        $this->assertEquals(1, $tokens[1]->posInSentence);
+        $this->assertEquals(0, $tokens[1]->sentenceIndex);
+
+        $this->assertEquals("hello hello", $tokens[1]->domNodes[0]->textContent);
+        $this->assertEquals(" hello", $tokens[2]->domNodes[0]->textContent);
+
+        $this->assertEquals("hello", $tokens[2]->value);
+        $this->assertEquals(2, $tokens[2]->posInSentence);
+        $this->assertEquals(0, $tokens[2]->sentenceIndex);
     }
 
-    public function testCanOpenWordDocument()
+    private function getTestXmlForCase1(): DOMDocument
     {
-        $wordXmlExtractor = new WordXmlExtractor();
-        $wordXmlExtractor->load("/home/atomicbomber/Documents/jefri/heavily-formatted.docx");
-
-        $tokens = $wordXmlExtractor->tokenize();
-        ray()->send(
-            collect($tokens)
-                ->map->value
+        $domDocument = new DOMDocument();
+        $domDocument->loadXML(/** @lang XML */ <<<HERE
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            mc:Ignorable="w14 wp14">
+    <w:body>
+        <w:p>
+            <w:pPr>
+                <w:pStyle w:val="Normal"/>
+                <w:bidi w:val="0"/>
+                <w:jc w:val="left"/>
+                <w:rPr>
+                    <w:b/>
+                    <w:b/>
+                    <w:bCs/>
+                </w:rPr>
+            </w:pPr>
+            <w:r>
+                <w:rPr></w:rPr>
+                <w:t>hello hel</w:t>
+                <w:t>l</w:t>
+                <w:t>o hello</w:t>
+                <w:br/>
+                <w:t> Merry christmas </w:t>
+            </w:r>
+        </w:p>
+        <w:sectPr>
+            <w:type w:val="nextPage"/>
+            <w:pgSz w:w="11906" w:h="16838"/>
+            <w:pgMar w:left="1134" w:right="1134" w:header="0" w:top="1134" w:footer="0" w:bottom="1134" w:gutter="0"/>
+            <w:pgNumType w:fmt="decimal"/>
+            <w:formProt w:val="false"/>
+            <w:textDirection w:val="lrTb"/>
+            <w:docGrid w:type="default" w:linePitch="100" w:charSpace="0"/>
+        </w:sectPr>
+    </w:body>
+</w:document>
+HERE
         );
+        return $domDocument;
+    }
+
+    private function getTestXmlForCase2(): DOMDocument
+    {
+        $domDocument = new DOMDocument();
+        $domDocument->loadXML(/** @lang XML */ <<<HERE
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            mc:Ignorable="w14 wp14">
+    <w:body>
+        <w:p>
+            <w:pPr>
+                <w:pStyle w:val="Normal"/>
+                <w:bidi w:val="0"/>
+                <w:jc w:val="left"/>
+                <w:rPr>
+                    <w:b/>
+                    <w:b/>
+                    <w:bCs/>
+                </w:rPr>
+            </w:pPr>
+            <w:r>
+                <w:rPr></w:rPr>
+                <w:t>hello hel</w:t>
+                <w:t>lo hello</w:t>
+            </w:r>
+        </w:p>
+        <w:sectPr>
+            <w:type w:val="nextPage"/>
+            <w:pgSz w:w="11906" w:h="16838"/>
+            <w:pgMar w:left="1134" w:right="1134" w:header="0" w:top="1134" w:footer="0" w:bottom="1134" w:gutter="0"/>
+            <w:pgNumType w:fmt="decimal"/>
+            <w:formProt w:val="false"/>
+            <w:textDirection w:val="lrTb"/>
+            <w:docGrid w:type="default" w:linePitch="100" w:charSpace="0"/>
+        </w:sectPr>
+    </w:body>
+</w:document>
+HERE
+        );
+        return $domDocument;
     }
 }
