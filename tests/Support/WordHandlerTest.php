@@ -42,7 +42,7 @@ class Token
     }
 }
 
-class WordXmlExtractor
+class OpenXMLTokenizer
 {
     public DOMDocument $wordXmlDomDocument;
 
@@ -325,7 +325,7 @@ class WordHandlerTest extends TestCase
     /** @test */
     public function it_can_process_tokens_that_are_split_in_multiple_tags()
     {
-        $extractor = new WordXmlExtractor();
+        $extractor = new OpenXMLTokenizer();
         $extractor->loadXmlDocument($this->getTestXmlForCase1());
         $tokens = $extractor->tokenizeAndPrepareForSubstitution();
 
