@@ -8,10 +8,10 @@ use Tests\TestCase;
 use DOMDocument;
 use DOMNode;
 
-class Sentence {
+class DomDocumentTextSentence {
     public string $value;
     public int $index;
-    /** @var array | BetterToken[] */
+    /** @var array | DomDocumentTextToken[] */
     public array $tokens;
 
     public function __construct(string $value, int $index, array $tokens)
@@ -22,7 +22,7 @@ class Sentence {
     }
 }
 
-class BetterToken {
+class DomDocumentTextToken {
     public string $rawValue;
     /** @var array | DOMNode[] */
     public array $nodes;
@@ -43,18 +43,18 @@ class BetterToken {
     }
 }
 
-class BetterTokenizer {
+class DomDocumentTextTokenizer {
     private DOMDocument $document;
     private string $textAccumulator = "";
 
-    /** @var array | BetterToken[] */
+    /** @var array | DomDocumentTextToken[] */
     private array $tokens = [];
     private int $tokenIndex = 0;
 
     private ?DOMNode $prevLetterTextNode = null;
     private array $textNodeAccumulator = [];
 
-    private ?BetterToken $prevMultiNodeToken = null;
+    private ?DomDocumentTextToken $prevMultiNodeToken = null;
     private int $charIndex = 0;
     private string $prevChar = "";
     private string $currChar = "";
@@ -63,7 +63,7 @@ class BetterTokenizer {
 
     private int $sentenceIndex = 0;
     private string $sentenceAccumulator = "";
-    /** @var array | Sentence[] */
+    /** @var array | DomDocumentTextSentence[] */
     private array $sentences = [];
 
     private ?DOMNode $prevNode;
@@ -73,6 +73,7 @@ class BetterTokenizer {
     private array $tokenPositionsInSentence = [];
     private array $tokenPositionsInNode = [];
     private int $textNodeIndex = 0;
+    private bool $squashNodes = false;
 
     public function __construct(DOMDocument $document)
     {
@@ -93,7 +94,10 @@ class BetterTokenizer {
                 $this->walk($node, function (DOMNode $subNode) {
                     if ($subNode->nodeName === "w:t") {
                         $this->hasEncounteredLetterInCurrentTextNode = false;
-                        $this->squashNodesInPreviousMultiNodeToken();
+
+                        if ($this->squashNodes) {
+                            $this->squashNodesInPreviousMultiNodeToken();
+                        }
 
                         if ($this->hasUnhandledLinebreak) {
                             $this->saveToken();
@@ -141,8 +145,13 @@ class BetterTokenizer {
 
             $this->saveSentence();
         });
-        
         return $this->sentences;
+    }
+
+    public function tokenizeWithSquashing(): array
+    {
+        $this->squashNodes = true;
+        return $this->tokenize();
     }
 
     private function getAndIncrementTokenPositionInTextNode(int $textNodeIndex, string $normalizedTokenValue): int {
@@ -162,11 +171,11 @@ class BetterTokenizer {
     public function saveToken(): void
     {
         if ($this->textAccumulator !== "") {
-            $newToken = new BetterToken($this->textAccumulator, $this->tokenIndex++, $this->textNodeAccumulator);
+            $newToken = new DomDocumentTextToken($this->textAccumulator, $this->tokenIndex++, $this->textNodeAccumulator);
 
             $newToken->posInSentence = $this->getAndIncrementTokenPositionInSentence($newToken->getNormalizedValue());
 
-            $textNodeIndex = count($this->textNodeAccumulator) > 1 ?
+            $textNodeIndex = $this->squashNodes && (count($this->textNodeAccumulator) > 1) ?
                 $this->textNodeIndex - count($this->textNodeAccumulator) + 1:
                 $this->textNodeIndex;
 
@@ -210,7 +219,7 @@ class BetterTokenizer {
     public function saveSentence(): void
     {
         if ($this->sentenceAccumulator !== "") {
-            $this->sentences[$this->sentenceIndex++] ??= new Sentence(
+            $this->sentences[$this->sentenceIndex++] ??= new DomDocumentTextSentence(
                 $this->sentenceAccumulator,
                 $this->sentenceIndex,
                 $this->tokens,
@@ -231,13 +240,13 @@ class BetterTokenizer {
     }
 }
 
-class BetterTokenizerTest extends TestCase
+class DomDocumentTextTokenizerTest extends TestCase
 {
-    public function test_it_can_work()
+    public function test_can_tokenize_with_squashing()
     {
-        $tokenizer = new BetterTokenizer($this->getTestXmlDocument());
+        $tokenizer = new DomDocumentTextTokenizer($this->getTestXmlDocument());
 
-        $sentences = $tokenizer->tokenize();
+        $sentences = $tokenizer->tokenizeWithSquashing();
         $this->assertCount(4, $sentences);
         $this->assertCount(2, $sentences[0]->tokens);
         $this->assertCount(1, $sentences[1]->tokens);
