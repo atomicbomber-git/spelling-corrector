@@ -238,9 +238,6 @@ class BetterTokenizerTest extends TestCase
         $tokenizer = new BetterTokenizer($this->getTestXmlDocument());
 
         $sentences = $tokenizer->tokenize();
-
-        ray()->send($sentences);
-
         $this->assertCount(4, $sentences);
         $this->assertCount(2, $sentences[0]->tokens);
         $this->assertCount(1, $sentences[1]->tokens);
@@ -254,11 +251,16 @@ class BetterTokenizerTest extends TestCase
         $this->assertEquals(0, $sentences[1]->tokens[0]->posInNode);
         $this->assertEquals(0, $sentences[1]->tokens[0]->posInSentence);
 
+        $this->assertEquals("Œuf", $sentences[2]->tokens[2]->rawValue);
+        $this->assertEquals("œuf", $sentences[2]->tokens[2]->getNormalizedValue());
+        $this->assertEquals(0, $sentences[2]->tokens[2]->posInSentence);
+        $this->assertEquals(0, $sentences[2]->tokens[2]->posInNode);
+
         $this->assertEquals("Halloween", $sentences[2]->tokens[3]->rawValue);
         $this->assertEquals("halloween", $sentences[2]->tokens[3]->getNormalizedValue());
         $this->assertEquals(0, $sentences[2]->tokens[3]->posInSentence);
         $this->assertEquals(0, $sentences[2]->tokens[3]->posInNode);
-        $this->assertEquals(" Hallo Hallo Hallo Halloween", $sentences[2]->tokens[3]->nodes[0]->textContent);
+        $this->assertEquals(" Hallo schönbrunn Œuf Halloween", $sentences[2]->tokens[3]->nodes[0]->textContent);
 
         $this->assertEquals("LITTLE", $sentences[3]->tokens[0]->rawValue);
         $this->assertEquals("little", $sentences[3]->tokens[0]->getNormalizedValue());
@@ -315,7 +317,7 @@ class BetterTokenizerTest extends TestCase
                 <w:rPr></w:rPr>
                 <w:t>hello hel</w:t>
                 <w:t>l</w:t>
-                <w:t>o... hello</w:t><w:br/><w:t> Hallo Hallo Hallo Hallo</w:t>
+                <w:t>o... hello</w:t><w:br/><w:t> Hallo schönbrunn Œuf Hallo</w:t>
                 <w:t>ween Hallo</w:t>
                 <w:t>. LITTLE LAMB, Little Lamb, little lamb </w:t>
             </w:r>
