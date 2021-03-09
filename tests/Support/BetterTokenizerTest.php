@@ -11,7 +11,7 @@ use DOMNode;
 class Sentence {
     public string $value;
     public int $index;
-    /** @var array | Token[] */
+    /** @var array | BetterToken[] */
     public array $tokens;
 
     public function __construct(string $value, int $index, array $tokens)
@@ -241,38 +241,54 @@ class BetterTokenizerTest extends TestCase
 
         ray()->send($sentences);
 
-        $this->assertCount(3, $sentences);
+        $this->assertCount(4, $sentences);
         $this->assertCount(2, $sentences[0]->tokens);
         $this->assertCount(1, $sentences[1]->tokens);
         $this->assertCount(5, $sentences[2]->tokens);
-        
-        
 
+        $this->assertEquals(0, $sentences[0]->tokens[0]->posInNode);
+        $this->assertEquals(0, $sentences[0]->tokens[0]->posInSentence);
+        $this->assertEquals(1, $sentences[0]->tokens[1]->posInNode);
+        $this->assertEquals(1, $sentences[0]->tokens[1]->posInSentence);
 
+        $this->assertEquals(0, $sentences[1]->tokens[0]->posInNode);
+        $this->assertEquals(0, $sentences[1]->tokens[0]->posInSentence);
 
-//        $this->assertEquals("hello", $tokens[0]->rawValue);
-//        $this->assertEquals(0, $tokens[0]->posInSentence);
-//        $this->assertEquals(0, $tokens[0]->sentenceIndex);
-//
-//        $this->assertEquals("hello", $tokens[1]->rawValue);
-//        $this->assertEquals(1, $tokens[1]->posInSentence);
-//        $this->assertEquals(0, $tokens[1]->sentenceIndex);
-//
-//        $this->assertEquals("hello hello", $tokens[1]->domNodes[0]->textContent);
-//        $this->assertEquals(1, $tokens[1]->posInFirstNode);
-//        $this->assertEquals(" hello", $tokens[2]->domNodes[0]->textContent);
-//
-//        $this->assertEquals("hello", $tokens[2]->rawValue);
-//        $this->assertEquals(2, $tokens[2]->posInSentence);
-//        $this->assertEquals(0, $tokens[2]->sentenceIndex);
-//
-//        $this->assertEquals(0, $tokens[3]->posInFirstNode);
-//        $this->assertEquals(1, $tokens[4]->posInFirstNode);
-//        $this->assertEquals(2, $tokens[5]->posInFirstNode);
-//        $this->assertEquals(0, $tokens[6]->posInFirstNode);
-//        $this->assertEquals(0, $tokens[7]->posInFirstNode);
+        $this->assertEquals("Halloween", $sentences[2]->tokens[3]->rawValue);
+        $this->assertEquals("halloween", $sentences[2]->tokens[3]->getNormalizedValue());
+        $this->assertEquals(0, $sentences[2]->tokens[3]->posInSentence);
+        $this->assertEquals(0, $sentences[2]->tokens[3]->posInNode);
+        $this->assertEquals(" Hallo Hallo Hallo Halloween", $sentences[2]->tokens[3]->nodes[0]->textContent);
 
-        $this->assertTrue(true);
+        $this->assertEquals("LITTLE", $sentences[3]->tokens[0]->rawValue);
+        $this->assertEquals("little", $sentences[3]->tokens[0]->getNormalizedValue());
+        $this->assertEquals(0, $sentences[3]->tokens[0]->posInSentence);
+        $this->assertEquals(0, $sentences[3]->tokens[0]->posInNode);
+
+        $this->assertEquals("LAMB", $sentences[3]->tokens[1]->rawValue);
+        $this->assertEquals("lamb", $sentences[3]->tokens[1]->getNormalizedValue());
+        $this->assertEquals(0, $sentences[3]->tokens[1]->posInSentence);
+        $this->assertEquals(0, $sentences[3]->tokens[1]->posInNode);
+
+        $this->assertEquals("Little", $sentences[3]->tokens[2]->rawValue);
+        $this->assertEquals("little", $sentences[3]->tokens[2]->getNormalizedValue());
+        $this->assertEquals(1, $sentences[3]->tokens[2]->posInSentence);
+        $this->assertEquals(1, $sentences[3]->tokens[2]->posInNode);
+
+        $this->assertEquals("Lamb", $sentences[3]->tokens[3]->rawValue);
+        $this->assertEquals("lamb", $sentences[3]->tokens[3]->getNormalizedValue());
+        $this->assertEquals(1, $sentences[3]->tokens[3]->posInSentence);
+        $this->assertEquals(1, $sentences[3]->tokens[3]->posInNode);
+
+        $this->assertEquals("little", $sentences[3]->tokens[4]->rawValue);
+        $this->assertEquals("little", $sentences[3]->tokens[4]->getNormalizedValue());
+        $this->assertEquals(2, $sentences[3]->tokens[4]->posInSentence);
+        $this->assertEquals(2, $sentences[3]->tokens[4]->posInNode);
+
+        $this->assertEquals("lamb", $sentences[3]->tokens[5]->rawValue);
+        $this->assertEquals("lamb", $sentences[3]->tokens[5]->getNormalizedValue());
+        $this->assertEquals(2, $sentences[3]->tokens[5]->posInSentence);
+        $this->assertEquals(2, $sentences[3]->tokens[5]->posInNode);
     }
 
     private function getTestXmlDocument(): DOMDocument
@@ -301,6 +317,7 @@ class BetterTokenizerTest extends TestCase
                 <w:t>l</w:t>
                 <w:t>o... hello</w:t><w:br/><w:t> Hallo Hallo Hallo Hallo</w:t>
                 <w:t>ween Hallo</w:t>
+                <w:t>. LITTLE LAMB, Little Lamb, little lamb </w:t>
             </w:r>
         </w:p>
         <w:sectPr>
