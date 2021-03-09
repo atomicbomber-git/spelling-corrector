@@ -328,7 +328,7 @@ class OpenXMLTokenizer
 class WordHandlerTest extends TestCase
 {
     /** @test */
-    public function it_can_process_tokens_that_are_split_in_multiple_tags()
+    public function it_can_tokenize()
     {
         $extractor = new OpenXMLTokenizer();
         $extractor->loadXmlDocument($this->getTestXmlForCase1());
@@ -384,48 +384,6 @@ class WordHandlerTest extends TestCase
                 <w:t>l</w:t>
                 <w:t>o hello</w:t><w:br/><w:t> Hallo Hallo Hallo Hallo</w:t>
                 <w:t>ween Hallo</w:t>
-            </w:r>
-        </w:p>
-        <w:sectPr>
-            <w:type w:val="nextPage"/>
-            <w:pgSz w:w="11906" w:h="16838"/>
-            <w:pgMar w:left="1134" w:right="1134" w:header="0" w:top="1134" w:footer="0" w:bottom="1134" w:gutter="0"/>
-            <w:pgNumType w:fmt="decimal"/>
-            <w:formProt w:val="false"/>
-            <w:textDirection w:val="lrTb"/>
-            <w:docGrid w:type="default" w:linePitch="100" w:charSpace="0"/>
-        </w:sectPr>
-    </w:body>
-</w:document>
-HERE
-        );
-        return $domDocument;
-    }
-
-    private function getTestXmlForCase2(): DOMDocument
-    {
-        $domDocument = new DOMDocument();
-        $domDocument->loadXML(/** @lang XML */ <<<HERE
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            mc:Ignorable="w14 wp14">
-    <w:body>
-        <w:p>
-            <w:pPr>
-                <w:pStyle w:val="Normal"/>
-                <w:bidi w:val="0"/>
-                <w:jc w:val="left"/>
-                <w:rPr>
-                    <w:b/>
-                    <w:b/>
-                    <w:bCs/>
-                </w:rPr>
-            </w:pPr>
-            <w:r>
-                <w:rPr></w:rPr>
-                <w:t>hello hel</w:t>
-                <w:t>lo hello</w:t>
             </w:r>
         </w:p>
         <w:sectPr>
