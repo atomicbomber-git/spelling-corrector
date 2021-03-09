@@ -27,12 +27,19 @@ class BetterToken {
     /** @var array | DOMNode[] */
     public array $nodes;
     public int $index;
+    public int $posInSentence;
+    public int $posInNode;
 
     public function __construct(string $rawValue, int $index, array $nodes)
     {
         $this->rawValue = $rawValue;
         $this->nodes = $nodes;
         $this->index = $index;
+    }
+
+    public function getNormalizedValue(): string
+    {
+        return mb_strtolower($this->rawValue);
     }
 }
 
@@ -56,11 +63,16 @@ class BetterTokenizer {
 
     private int $sentenceIndex = 0;
     private string $sentenceAccumulator = "";
-    /** @var array | string[] */
+    /** @var array | Sentence[] */
     private array $sentences = [];
 
     private ?DOMNode $prevNode;
     private bool $hasUnhandledLinebreak = false;
+    
+    /** @var array | int */
+    private array $tokenPositionsInSentence = [];
+    private array $tokenPositionsInNode = [];
+    private int $textNodeIndex = 0;
 
     public function __construct(DOMDocument $document)
     {
@@ -114,6 +126,8 @@ class BetterTokenizer {
                             $this->sentenceAccumulator .= $this->currChar;
                             $this->prevChar = $this->currChar;
                         }
+
+                        ++$this->textNodeIndex;
                     } elseif ($subNode->nodeName === "w:br") {
                         $this->hasUnhandledLinebreak = true;
                     }
@@ -131,10 +145,33 @@ class BetterTokenizer {
         return $this->sentences;
     }
 
+    private function getAndIncrementTokenPositionInTextNode(int $textNodeIndex, string $normalizedTokenValue): int {
+        $this->tokenPositionsInNode[$textNodeIndex][$normalizedTokenValue] ??= 0;
+        $pos = $this->tokenPositionsInNode[$textNodeIndex][$normalizedTokenValue];
+        ++$this->tokenPositionsInNode[$textNodeIndex][$normalizedTokenValue];
+        return $pos;
+    }
+
+    private function getAndIncrementTokenPositionInSentence(string $normalizedTokenValue): int {
+        $this->tokenPositionsInSentence[$normalizedTokenValue] ??= 0;
+        $pos = $this->tokenPositionsInSentence[$normalizedTokenValue];
+        ++$this->tokenPositionsInSentence[$normalizedTokenValue];
+        return $pos;
+    }
+
     public function saveToken(): void
     {
         if ($this->textAccumulator !== "") {
             $newToken = new BetterToken($this->textAccumulator, $this->tokenIndex++, $this->textNodeAccumulator);
+
+            $newToken->posInSentence = $this->getAndIncrementTokenPositionInSentence($newToken->getNormalizedValue());
+
+            $textNodeIndex = count($this->textNodeAccumulator) > 1 ?
+                $this->textNodeIndex - count($this->textNodeAccumulator) + 1:
+                $this->textNodeIndex;
+
+            $newToken->posInNode = $this->getAndIncrementTokenPositionInTextNode($textNodeIndex, $newToken->getNormalizedValue());
+
             $this->tokens[] = $newToken;
             $this->textAccumulator = "";
 
@@ -181,6 +218,7 @@ class BetterTokenizer {
             
             $this->tokens = [];
             $this->sentenceAccumulator = "";
+            $this->tokenPositionsInSentence = [];
         }
     }
 
@@ -198,9 +236,41 @@ class BetterTokenizerTest extends TestCase
     public function test_it_can_work()
     {
         $tokenizer = new BetterTokenizer($this->getTestXmlDocument());
-        $tokens = $tokenizer->tokenize();
 
-        ray()->send($tokens);
+        $sentences = $tokenizer->tokenize();
+
+        ray()->send($sentences);
+
+        $this->assertCount(3, $sentences);
+        $this->assertCount(2, $sentences[0]->tokens);
+        $this->assertCount(1, $sentences[1]->tokens);
+        $this->assertCount(5, $sentences[2]->tokens);
+        
+        
+
+
+
+//        $this->assertEquals("hello", $tokens[0]->rawValue);
+//        $this->assertEquals(0, $tokens[0]->posInSentence);
+//        $this->assertEquals(0, $tokens[0]->sentenceIndex);
+//
+//        $this->assertEquals("hello", $tokens[1]->rawValue);
+//        $this->assertEquals(1, $tokens[1]->posInSentence);
+//        $this->assertEquals(0, $tokens[1]->sentenceIndex);
+//
+//        $this->assertEquals("hello hello", $tokens[1]->domNodes[0]->textContent);
+//        $this->assertEquals(1, $tokens[1]->posInFirstNode);
+//        $this->assertEquals(" hello", $tokens[2]->domNodes[0]->textContent);
+//
+//        $this->assertEquals("hello", $tokens[2]->rawValue);
+//        $this->assertEquals(2, $tokens[2]->posInSentence);
+//        $this->assertEquals(0, $tokens[2]->sentenceIndex);
+//
+//        $this->assertEquals(0, $tokens[3]->posInFirstNode);
+//        $this->assertEquals(1, $tokens[4]->posInFirstNode);
+//        $this->assertEquals(2, $tokens[5]->posInFirstNode);
+//        $this->assertEquals(0, $tokens[6]->posInFirstNode);
+//        $this->assertEquals(0, $tokens[7]->posInFirstNode);
 
         $this->assertTrue(true);
     }
