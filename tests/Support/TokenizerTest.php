@@ -7,13 +7,13 @@ namespace Tests\Support;
 use App\DomDocumentNLPTools\Tokenizer;
 use Tests\TestCase;
 use DOMDocument;
-use DOMNode;
 
 class TokenizerTest extends TestCase
 {
     public function test_can_tokenize_with_squashing()
     {
-        $tokenizer = new Tokenizer($this->getTestXmlDocument());
+        $tokenizer = new Tokenizer();
+        $tokenizer->load($this->getTestXmlDocument());
 
         $sentences = $tokenizer->tokenizeWithSquashing();
         $this->assertCount(4, $sentences);

@@ -6,16 +6,23 @@ use App\Constants\MessageState;
 use App\DocumentProcessing\WordAndComponentNodesPair;
 use App\DocumentProcessing\WordXmlProcessor;
 use App\DokumenWord;
+use App\DomDocumentNLPTools\Sentence;
+use App\DomDocumentNLPTools\Token;
+use App\DomDocumentNLPTools\Tokenizer;
+use App\RecommendationEngine\WordRecommender;
 use App\Support\FileConverter;
 use App\Support\SessionHelper;
 use Barryvdh\Debugbar\LaravelDebugbar;
 use DebugBar\DebugBar;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\ResponseFactory;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use NlpTools\Tokenizers\TokenizerInterface;
 use NlpTools\Tokenizers\WhitespaceTokenizer;
 use function Symfony\Component\String\s;
@@ -52,9 +59,25 @@ class DokumenWordController extends Controller
             ]);
         }
 
+        debugbar()->disable();
+
+        $tokenizer = new Tokenizer();
+        $tokenizer->load($dokumen_word->getWordXmlDomDocument());
+        $sentences = $tokenizer->tokenize();
+
+        collect($sentences)->transform(function (Sentence $sentence) {
+            $sentence->tokens = collect($sentence->tokens)
+                ->filter(function (Token $token) {
+                    return
+                        mb_strlen($token->getNormalizedValue()) > 1 &&
+                        !is_numeric($token->getNormalizedValue());
+                })
+                ->toArray();
+        });
+
         return $this->responseFactory->view("dokumen-word.show", [
             "dokumen_word" => $dokumen_word->makeHidden("konten_html"),
-            "corrections" => (new WordXmlProcessor)->getRecommendations($dokumen_word->getWordXmlDomDocument()),
+            "tokens_with_error" => (new WordRecommender)->getRecommendations($sentences),
         ]);
     }
 
@@ -87,11 +110,17 @@ class DokumenWordController extends Controller
                 "nama" => $data["nama"],
             ]);
 
-        $dokumenWord->saveHtml(
-            FileConverter::wordToHTML(
-                $request->file("berkas")->getRealPath(),
-            )
-        );
+        try {
+            $dokumenWord->saveHtml(
+                FileConverter::wordToHTML(
+                    $request->file("berkas")->getRealPath(),
+                )
+            );
+        } catch (HttpClientException $exception) {
+            throw ValidationException::withMessages([
+                "berkas" => "Gagal menghubungi server dokumen di " . config("application.document_server_url") . "."
+            ]);
+        }
 
         $dokumenWord
             ->addMediaFromRequest("berkas")

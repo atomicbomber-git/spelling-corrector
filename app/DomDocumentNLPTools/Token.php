@@ -3,6 +3,7 @@
 
 namespace App\DomDocumentNLPTools;
 
+use App\Support\StringUtil;
 use DOMNode;
 
 class Token {
@@ -22,6 +23,6 @@ class Token {
 
     public function getNormalizedValue(): string
     {
-        return mb_strtolower($this->rawValue);
+        return StringUtil::trimAndLowercaseUnicode($this->rawValue);
     }
 }

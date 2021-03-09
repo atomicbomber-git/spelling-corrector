@@ -13,7 +13,7 @@ class SubstitutionList
         $this->entries[$old][$index] ??= $new;
     }
 
-    public function getSubstitutionFor(string $old, int $index): ?string
+    public function getSubstituteFor(string $old, int $index): ?string
     {
         return $this->entries[$old][$index] ?? null;
     }

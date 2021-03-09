@@ -76,6 +76,7 @@ class NgramAndWordSeeder extends Seeder
         $this->dictionary = array_filter($this->dictionary, fn($frequency, $word) => $frequency > 3, ARRAY_FILTER_USE_BOTH);
         $words = array_filter($this->dictionary, fn($word) => strlen($word) > 1 && $this->symbolToWholeTextRatio($word) < 0.2, ARRAY_FILTER_USE_KEY);
         $words = array_map(fn($word) => ["teks" => $word], array_keys($words));
+
         Kata::query()->insert($words);
 
         $flattenedBigramFrequencies = $this->getFlattenedBigramFrequencies($this->bigramFrequencies);

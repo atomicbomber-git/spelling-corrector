@@ -1,6 +1,7 @@
 <?php
 
 use App\DokumenWord;
+use App\DomDocumentNLPTools\Sentence;
 use App\Http\Controllers\DokumenWordController;
 use App\Http\Controllers\DokumenWordDownloadController;
 use App\Http\Controllers\ImportWordsFromDocumentController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\RekomendasiPembenaranController;
 use App\Http\Controllers\WordController;
 use App\Support\DomNodeTraverser;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -32,20 +34,29 @@ Route::get('/debug', function () {
 });
 
 Route::get("dokumen-word/{dokumen_word}/debug", function (DokumenWord $dokumen_word) {
-    $xmlRoot = $dokumen_word->getWordXmlDomDocument();
+    $tokenizer = new \App\DomDocumentNLPTools\Tokenizer();
+    $document = $dokumen_word->getWordXmlDomDocument();
+    $tokenizer->load($document);
 
-    DomNodeTraverser::traverse($xmlRoot, function (DOMNode $node) {
-        if ($node->nodeName === "w:br") {
-            dump([
-                $node->ownerDocument->saveXML($node),
-                $node->childNodes->count(),
-            ]);
+    ray()->send(
+        collect($tokenizer->tokenizeWithSquashing())
+            ->reduce(function (Collection $collection, Sentence $sentence) {
+                return $collection->push(...$sentence->tokens);
+            }, collect())
 
-            foreach ($node->childNodes as $childNode) {
-                dump($childNode->nodeName === "w:br");
-            }
-        }
-    });
+//            ->filter(fn ($token) => $token->getNormalizedValue() === "lamb")
+            ->map(function (\App\DomDocumentNLPTools\Token $token) {
+                return [
+                    $token->rawValue,
+                    $token->posInNode,
+                    collect($token->nodes)->map(function (DOMNode $DOMNode) {
+                        return $DOMNode->ownerDocument->saveXML($DOMNode);
+                    })->join("\n")
+                ];
+            })[29]
+    );
+
+//    ray()->xml($dokumen_word->getWordXmlDomDocument()->saveXML());
 });
 
 Route::get("dokumen-word/{dokumen_word}/xml", function (DokumenWord $dokumen_word) {
@@ -70,6 +81,5 @@ Route::resource("mahasiswa", class_basename(MahasiswaController::class));
 Route::resource("dokumen-word", class_basename(DokumenWordController::class));
 Route::get("dokumen-word/{dokumen_word}/download", class_basename(DokumenWordDownloadController::class))->name("dokumen-word.download");
 Route::post("dokumen-word/{dokumen_word}/koreksi", class_basename(DokumenKoreksiEjaanController::class))->name("dokumen-word.koreksi-ejaan");
-Route::post("rekomendasi-pembenaran", class_basename(RekomendasiPembenaranController::class))->name("rekomendasi-pembenaran");
 Route::resource("/word", class_basename(WordController::class));
 Route::post("/import-words-from-document", class_basename(ImportWordsFromDocumentController::class))->name("import-words-from-document");

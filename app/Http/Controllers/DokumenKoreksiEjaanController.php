@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\DocumentProcessing\SubstitutionList;
-use App\DocumentProcessing\WordXmlProcessor;
 use App\DokumenWord;
+use App\DomDocumentNLPTools\Tokenizer;
 use App\Support\FileConverter;
 use DOMDocument;
 use Exception;
@@ -16,75 +16,13 @@ use ZipArchive;
 class DokumenKoreksiEjaanController extends Controller
 {
     private ResponseFactory $responseFactory;
+    private Tokenizer $tokenizer;
 
-    public function __construct(ResponseFactory $responseFactory)
+    public function __construct(ResponseFactory $responseFactory, Tokenizer $tokenizer)
     {
         $this->responseFactory = $responseFactory;
+        $this->tokenizer = $tokenizer;
     }
-
-//    /**
-//     * Handle the incoming request.
-//     *
-//     * @param \Illuminate\Http\Request $request
-//     * @param DokumenWord $dokumen_word
-//     * @return \Illuminate\Http\Response
-//     */
-//    public function __invoke(Request $request, DokumenWord $dokumen_word)
-//    {
-//        $data = $request->validate([
-//            "corrections" => ["array", "required"],
-//            "corrections.*.original" => ["required", "string"],
-//            "corrections.*.replacements" => ["required", "array"],
-//            "corrections.*.replacements.*.index" => ["required", "integer"],
-//            "corrections.*.replacements.*.correction" => ["required", "string"],
-//        ]);
-//
-//        $replacementPairs = (new Collection($data["corrections"]))
-//            ->pluck("replacements", "original")
-//            ->toArray();
-//
-//        $domDocument = new DOMDocument();
-//        $domDocument->loadHTML($dokumen_word->getHtml());
-//
-//        foreach ($replacementPairs as $original => $replacements) {
-//            $original = preg_quote($original, "/");
-//
-//            $domDocument = StringUtil::replaceAllRegexMultipleInXmlNode(
-//                "/(\b)({$original})(\b)/i",
-//                $replacements,
-//                $domDocument,
-//            );
-//        }
-//
-//        DB::beginTransaction();
-//
-//        $dokumen_word->saveHtml($domDocument->saveHTML());
-//
-//        /*
-//         * Send wrapped HTML content to server, get docx data
-//         * Replace current docx data with data obtained from server
-//         * */
-//        $wrappedHTML = $this->getWrappedHTMLFromDokumenWord($dokumen_word);
-//
-//        $docxFileContentInStringForm = FileConverter::HTMLToWord($wrappedHTML);
-//
-//        $dokumen_word
-//            ->addMediaFromString($docxFileContentInStringForm)
-//            ->usingFileName(
-//                pathinfo($dokumen_word->getFirstMediaPath(DokumenWord::COLLECTION_WORD_FILE))["basename"]
-//            )
-//            ->toMediaCollection(DokumenWord::COLLECTION_WORD_FILE);
-//
-//
-//        DB::commit();
-//
-//        SessionHelper::flashMessage(
-//            __("messages.update.success"),
-//            MessageState::STATE_SUCCESS,
-//        );
-//
-//        return $this->responseFactory->noContent(200);
-//    }
 
     /**
      * Handle the incoming request.
@@ -107,7 +45,7 @@ class DokumenKoreksiEjaanController extends Controller
         foreach ($data["corrections"] as $correction) {
             foreach ($correction["replacements"] as $replacement) {
                 $substitutionList->addEntry(
-                    strtolower($correction["original"]),
+                    mb_strtolower($correction["original"]),
                     $replacement["index"],
                     $replacement["correction"],
                 );
@@ -122,7 +60,9 @@ class DokumenKoreksiEjaanController extends Controller
         if ($zipResource === true) {
             $domDocument = new DOMDocument();
             $domDocument->loadXML($zipArchive->getFromName($pathToDocumentInsideZip));
-            $newDocument = (new WordXmlProcessor)->substituteWords($domDocument, $substitutionList);
+            $newDocument = $this->substituteWordsInDomDocument($domDocument, $substitutionList);
+
+
             $zipArchive->deleteName($pathToDocumentInsideZip);
             $zipArchive->addFromString($pathToDocumentInsideZip, $newDocument->saveXML());
             $zipArchive->close();
@@ -137,31 +77,45 @@ class DokumenKoreksiEjaanController extends Controller
         return $this->responseFactory->noContent(200);
     }
 
-    /**
-     * @param DokumenWord $dokumen_word
-     * @return string
-     */
-    public function getWrappedHTMLFromDokumenWord(DokumenWord $dokumen_word): string
+    public function substituteWordsInDomDocument(DOMDocument $domDocument, SubstitutionList $substitutionList)
     {
-        $contentHtml = $dokumen_word->getHtml();
+        /* Obtain all tokens inside the dom document */
+        $this->tokenizer->load($domDocument);
+        $sentences = $this->tokenizer->tokenizeWithSquashing();
 
-        return <<<HERE
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
-    >
-    <meta http-equiv="X-UA-Compatible"
-          content="ie=edge"
-    >
-    <title> $dokumen_word->nama </title>
-</head>
-<body>
-    $contentHtml
-</body>
-</html>
-HERE;
+        /* How often has a particular token value been replaced in a domNode? */
+        $tokenValueDomNodeSubCounter = [];
+
+        foreach ($sentences as $sentence) {
+            foreach ($sentence->tokens as $token) {
+                $value = $token->getNormalizedValue();
+                $substitute = $substitutionList->getSubstituteFor($value, $token->index);
+
+                /* Determine the tokens that need to be fixed (based on index in substitution list) */
+                if ($substitute === null) {
+                    continue;
+                }
+
+                /* Perform replace work token by token; Also keep a tally on how often a token's value has been replaced in a domNode */
+                $targetDomNode = $token->nodes[0];
+                $domNodeHash = spl_object_hash($targetDomNode);
+                $backOffset = $tokenValueDomNodeSubCounter[$domNodeHash][$value] ?? 0;
+                $quotedValue = preg_quote($value, "/");
+                $counter = 0;
+
+                $targetTextContent = $targetDomNode->textContent;
+
+                $targetDomNode->textContent = preg_replace_callback("/\b(_)*({$quotedValue})(_)*\b/ui", function ($match) use ($substitute, &$counter, $backOffset, $token) {
+                    return ($counter++ === ($token->posInNode - $backOffset)) ?
+                        ($match[1] ?? "") . $substitute . ($match[3] ?? "") :
+                        $match[0];
+                }, $targetTextContent);
+
+                $tokenValueDomNodeSubCounter[$domNodeHash][$value] ??= 0;
+                ++$tokenValueDomNodeSubCounter[$domNodeHash][$value];
+            }
+        }
+
+        return $domDocument;
     }
 }
