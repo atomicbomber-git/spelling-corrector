@@ -4,7 +4,8 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class NgramFrequency extends Model
+class FrekuensiTrigram extends Model
 {
+    protected $table = "ngram_frequencies";
     protected $guarded = [];
 }

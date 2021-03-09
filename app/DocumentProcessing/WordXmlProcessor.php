@@ -5,11 +5,11 @@ namespace App\DocumentProcessing;
 
 
 use App\DocumentProcessing\WordAndComponentNodesPair as Pair;
-use App\NgramFrequency;
+use App\FrekuensiTrigram;
 use App\SimilaritasJaroWinkler;
 use App\Support\DomNodeTraverser;
 use App\Support\StringUtil;
-use App\Word;
+use App\Kata;
 use DOMDocument;
 use DOMNode;
 
@@ -301,7 +301,7 @@ class WordXmlProcessor
         $words = array_map(fn(Pair $pair) => $pair->word, $wordPairs);
         $words = array_unique($words);
 
-        $correctWords = Word::query()
+        $correctWords = Kata::query()
             ->select("content")
             ->whereIn("content", $words)
             ->pluck("content")
@@ -321,7 +321,7 @@ class WordXmlProcessor
 
                     $recommendations = $this->getMostSimilarWords($pair->word, self::MAX_RECOMMENDATIONS);
 
-                    $ngramData = NgramFrequency::query()
+                    $ngramData = FrekuensiTrigram::query()
                         ->select("word3", "frequency")
                         ->where("word1", $wordTwoBehind)
                         ->where("word2", $wordOneBehind)
@@ -358,7 +358,7 @@ class WordXmlProcessor
             ->pluck("word_b");
 
         if ($results->isEmpty()) {
-            $results = Word::query()
+            $results = Kata::query()
                 ->select("content")
                 ->selectRaw("jaro_winkler_similarity(?, content) AS similaritas", [$word])
                 ->orderByRaw("jaro_winkler_similarity(?, content) DESC", [$word])
@@ -366,7 +366,7 @@ class WordXmlProcessor
                 ->get();
 
             SimilaritasJaroWinkler::query()->insert(
-                $results->map(function (Word $similarWord) use ($word) {
+                $results->map(function (Kata $similarWord) use ($word) {
                     return [
                         "word_a" => $word,
                         "word_b" => $similarWord->content,

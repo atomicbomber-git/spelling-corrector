@@ -4,9 +4,9 @@
 namespace App\BusinessLogic;
 
 
-use App\NgramFrequency;
+use App\FrekuensiTrigram;
 use App\SimilaritasJaroWinkler;
-use App\Word;
+use App\Kata;
 use Illuminate\Support\Collection;
 use NlpTools\Tokenizers\RegexTokenizer;
 use NlpTools\Tokenizers\TokenizerInterface;
@@ -80,7 +80,7 @@ class RekomendatorKoreksiEjaan
 
     public function tokenExistsInDictionary(string $token): bool
     {
-        return Word::query()
+        return Kata::query()
                 ->where("content", "=", $token)
                 ->count() > 0;
     }
@@ -94,7 +94,7 @@ class RekomendatorKoreksiEjaan
     {
         $most_similar_words = $this->getMostSimilarWords($cleanedToken, self::MAX_RECOMMENDATIONS)->pluck("points", "word");
 
-        $ngram_frequencies = NgramFrequency::query()
+        $ngram_frequencies = FrekuensiTrigram::query()
             ->select("frequency", "word3")
             ->where([
                 "word1" => $prev_word_1,
@@ -134,7 +134,7 @@ class RekomendatorKoreksiEjaan
             return $cachedSimilarWords;
         }
 
-        $similarWords = Word::query()
+        $similarWords = Kata::query()
             ->select("content AS word")
             ->selectRaw("jaro_winkler_similarity(?, content) AS points", [$incorrectWord])
             ->orderByRaw("jaro_winkler_similarity(?, content) DESC", [$incorrectWord])
