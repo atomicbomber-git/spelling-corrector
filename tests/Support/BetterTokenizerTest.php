@@ -26,14 +26,13 @@ class BetterToken {
     public string $rawValue;
     /** @var array | DOMNode[] */
     public array $nodes;
-    public int $sentenceIndex;
-    public int $tokenIndex;
+    public int $index;
 
-    public function __construct(string $rawValue, array $nodes, int $tokenIndex)
+    public function __construct(string $rawValue, int $index, array $nodes)
     {
         $this->rawValue = $rawValue;
         $this->nodes = $nodes;
-        $this->tokenIndex = $tokenIndex;
+        $this->index = $index;
     }
 }
 
@@ -135,7 +134,7 @@ class BetterTokenizer {
     public function saveToken(): void
     {
         if ($this->textAccumulator !== "") {
-            $newToken = new BetterToken($this->textAccumulator, $this->textNodeAccumulator, $this->tokenIndex++);
+            $newToken = new BetterToken($this->textAccumulator, $this->tokenIndex++, $this->textNodeAccumulator);
             $this->tokens[] = $newToken;
             $this->textAccumulator = "";
 
