@@ -34,6 +34,7 @@ class WordRecommender
 
                 if (!in_array($word, $dictionary)) {
                     $recommendations[] = [
+                        "raw_value" => $token->rawValue,
                         "value" => $token->getNormalizedValue(),
                         "index" => $token->index,
                         "pos_in_sentence" => $token->posInSentence,

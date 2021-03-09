@@ -166,6 +166,15 @@ export default {
                     positions: [],
                 })
             }
+    
+            let correction = recommendations[0].word
+            if (token.raw_value[0].toUpperCase() === token.raw_value[0]) {
+                correction = correction[0].toUpperCase() + correction.substr(1)
+            }
+            
+            if (token.raw_value.toUpperCase() === token.raw_value) {
+                correction = correction.toUpperCase()
+            }
 
             this.mTokensWithError[token.value].positions.push({
                 index: token.index,
@@ -173,7 +182,7 @@ export default {
                 wordPosInSentence: token.pos_in_sentence,
                 recommendations: recommendations,
                 selectedRecommendation: recommendations[0].word,
-                correction: recommendations[0].word,
+                correction: correction,
                 displaySentence: false,
             })
         })
@@ -218,7 +227,6 @@ export default {
     
     methods: {
         onDisplaySentenceButtonClick(errorPosition) {
-            console.log(errorPosition)
             errorPosition.displaySentence = !errorPosition.displaySentence
         },
         

@@ -63,13 +63,7 @@ class Tokenizer
 
                 $this->walk($node, function (DOMNode $subNode) {
                     if ($subNode->nodeName === "w:t") {
-                        if ($this->hasUnhandledLinebreak) {
-                            $this->textNodeIndex--;
-                            $this->saveToken();
-                            $this->saveSentence();
-                            $this->textNodeIndex++;
-                            $this->hasUnhandledLinebreak = false;
-                        }
+                        $this->hasEncounteredLetterInCurrentTextNode = false;
 
                         if ($this->textAccumulator === "") {
                             $this->textNodeAccumulator = [$subNode];
@@ -77,7 +71,15 @@ class Tokenizer
                             $this->textNodeAccumulator[] = $subNode;
                         }
 
-                        $this->hasEncounteredLetterInCurrentTextNode = false;
+                        if ($this->hasUnhandledLinebreak) {
+                            $this->textNodeIndex--;
+
+
+                            $this->saveToken();
+                            $this->saveSentence();
+                            $this->textNodeIndex++;
+                            $this->hasUnhandledLinebreak = false;
+                        }
 
                         if ($this->squashNodes) {
                             $this->squashNodesInPreviousMultiNodeToken();
@@ -92,6 +94,8 @@ class Tokenizer
                                 $this->prevLetterTextNode = $subNode;
                             } /* Non letters */
                             else {
+
+
                                 $this->saveToken();
                             }
 
@@ -100,6 +104,7 @@ class Tokenizer
                             }
 
                             $this->sentenceAccumulator .= $this->currChar;
+
                             $this->prevChar = $this->currChar;
                             $this->prevCharIndex = $this->charIndex;
                         }
@@ -110,6 +115,8 @@ class Tokenizer
                     }
                     $this->prevNode = $subNode;
                 });
+
+
 
                 $this->textNodeIndex--;
                 $this->saveToken();
@@ -156,6 +163,8 @@ class Tokenizer
 
             if (!$this->hasEncounteredLetterInCurrentTextNode) {
                 $this->textNodeAccumulator = [array_pop($nodesToBeSaved)];
+            } else {
+                $this->textNodeAccumulator = [array_pop($this->textNodeAccumulator)];
             }
 
             $newToken = new Token($this->textAccumulator, $this->tokenIndex++, $nodesToBeSaved);
@@ -168,7 +177,6 @@ class Tokenizer
 
             if (count($newToken->nodes) > 1) {
                 $this->prevMultiNodeToken = $newToken;
-
                 $this->multiNodeTokenLastNodeTextLength =
                     $this->hasEncounteredLetterInCurrentTextNode ?
                         $this->charIndex : ($this->prevCharIndex + 1);
@@ -210,6 +218,8 @@ class Tokenizer
     public function squashNodesInPreviousMultiNodeToken(): void
     {
         if ($this->prevMultiNodeToken !== null) {
+
+
             $textAccumulator = "";
             $domNodes = $this->prevMultiNodeToken->nodes;
             $lastDomNode = $domNodes[array_key_last($domNodes)];
