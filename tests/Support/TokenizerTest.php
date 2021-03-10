@@ -45,7 +45,7 @@ class TokenizerTest extends TestCase
         $this->assertEquals(0, $sentences[3]->tokens[0]->posInSentence);
         $this->assertEquals(0, $sentences[3]->tokens[0]->posInNode);
 
-        $this->assertEquals("LAMB", $sentences[3]->tokens[1]->rawValue);
+        $this->assertEquals("LAMB,", $sentences[3]->tokens[1]->rawValue);
         $this->assertEquals("lamb", $sentences[3]->tokens[1]->getNormalizedValue());
         $this->assertEquals(0, $sentences[3]->tokens[1]->posInSentence);
         $this->assertEquals(0, $sentences[3]->tokens[1]->posInNode);
@@ -55,7 +55,7 @@ class TokenizerTest extends TestCase
         $this->assertEquals(1, $sentences[3]->tokens[2]->posInSentence);
         $this->assertEquals(1, $sentences[3]->tokens[2]->posInNode);
 
-        $this->assertEquals("Lamb", $sentences[3]->tokens[3]->rawValue);
+        $this->assertEquals("Lamb,", $sentences[3]->tokens[3]->rawValue);
         $this->assertEquals("lamb", $sentences[3]->tokens[3]->getNormalizedValue());
         $this->assertEquals(1, $sentences[3]->tokens[3]->posInSentence);
         $this->assertEquals(1, $sentences[3]->tokens[3]->posInNode);
@@ -95,9 +95,25 @@ class TokenizerTest extends TestCase
                 <w:rPr></w:rPr>
                 <w:t>hello hel</w:t>
                 <w:t>l</w:t>
-                <w:t>o... hello</w:t><w:br/><w:t> Hallo schönbrunn Œuf Hallo</w:t>
-                <w:t>ween Hallo</w:t>
-                <w:t>. LITTLE LAMB, Little Lamb, little lamb </w:t>
+                <w:t>o... hello </w:t><w:br/><w:t> Hallo schönbrunn Œuf Hallo</w:t>
+                <w:t>ween </w:t>
+                <w:t>Hallo</w:t>
+            </w:r>
+        </w:p>
+        <w:p>
+            <w:pPr>
+                <w:pStyle w:val="Normal"/>
+                <w:bidi w:val="0"/>
+                <w:jc w:val="left"/>
+                <w:rPr>
+                    <w:b/>
+                    <w:b/>
+                    <w:bCs/>
+                </w:rPr>
+            </w:pPr>
+            <w:r>
+                <w:rPr></w:rPr>
+                <w:t>LITTLE LAMB, Little Lamb, little lamb </w:t>
             </w:r>
         </w:p>
         <w:sectPr>

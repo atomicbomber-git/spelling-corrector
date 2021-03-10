@@ -73,8 +73,6 @@ class Tokenizer
 
                         if ($this->hasUnhandledLinebreak) {
                             $this->textNodeIndex--;
-
-
                             $this->saveToken();
                             $this->saveSentence();
                             $this->textNodeIndex++;
@@ -88,14 +86,13 @@ class Tokenizer
                         for ($this->charIndex = 0; $this->charIndex < mb_strlen($subNode->textContent); ++$this->charIndex) {
                             $this->currChar = mb_substr($subNode->textContent, $this->charIndex, 1);
 
+                            /* Non-separators */
                             if (preg_match("/[^\p{Z}]/ui", $this->currChar)) {
                                 $this->hasEncounteredLetterInCurrentTextNode = true;
                                 $this->textAccumulator .= $this->currChar;
                                 $this->prevLetterTextNode = $subNode;
-                            } /* Non letters */
+                            }
                             else {
-
-
                                 $this->saveToken();
                             }
 
@@ -104,7 +101,6 @@ class Tokenizer
                             }
 
                             $this->sentenceAccumulator .= $this->currChar;
-
                             $this->prevChar = $this->currChar;
                             $this->prevCharIndex = $this->charIndex;
                         }
@@ -116,8 +112,6 @@ class Tokenizer
                     $this->prevNode = $subNode;
                 });
 
-
-
                 $this->textNodeIndex--;
                 $this->saveToken();
                 $this->textNodeIndex++;
@@ -128,10 +122,9 @@ class Tokenizer
             $this->saveSentence();
         });
 
-        /* Hacky */
+        /* TODO: Hacky and ugly, find other solutions */
         if ($this->squashNodes) {
             $skips = [];
-
             foreach ($this->sentences as $sentence) {
                 foreach ($sentence->tokens as $token) {
                     $value = $token->getNormalizedValue();
@@ -143,7 +136,6 @@ class Tokenizer
                 }
             }
         }
-
 
         return $this->sentences;
     }
@@ -218,21 +210,16 @@ class Tokenizer
     public function squashNodesInPreviousMultiNodeToken(): void
     {
         if ($this->prevMultiNodeToken !== null) {
-
-
             $textAccumulator = "";
             $domNodes = $this->prevMultiNodeToken->nodes;
             $lastDomNode = $domNodes[array_key_last($domNodes)];
             $firstDomNode = $domNodes[array_key_first($domNodes)];
 
-
             for ($i = 1; $i < (count($domNodes) - 1); ++$i) {
                 $textAccumulator .= $domNodes[$i]->textContent;
-                
                 if ($domNodes[$i]->parentNode !== null) {
                     $domNodes[$i]->parentNode->removeChild($domNodes[$i]);
                 }
-                
             }
 
             $textAccumulator .= mb_substr($lastDomNode->textContent, 0, $this->multiNodeTokenLastNodeTextLength);
@@ -248,9 +235,6 @@ class Tokenizer
         }
     }
 
-    /**
-     * @return bool
-     */
     public function charIsSeparator(string $char): bool
     {
         return (preg_match("/[\p{Z}]/ui", $char) > 0);
