@@ -29,36 +29,6 @@ Auth::routes([
     "login"
 ]);
 
-Route::get('/debug', function () {
-
-});
-
-Route::get("dokumen-word/{dokumen_word}/debug", function (DokumenWord $dokumen_word) {
-    $tokenizer = new \App\DomDocumentNLPTools\Tokenizer();
-    $document = $dokumen_word->getWordXmlDomDocument();
-    $tokenizer->load($document);
-
-    ray()->send(
-        collect($tokenizer->tokenizeWithSquashing())
-            ->reduce(function (Collection $collection, Sentence $sentence) {
-                return $collection->push(...$sentence->tokens);
-            }, collect())
-
-//            ->filter(fn ($token) => $token->getNormalizedValue() === "lamb")
-            ->map(function (\App\DomDocumentNLPTools\Token $token) {
-                return [
-                    $token->rawValue,
-                    $token->posInNode,
-                    collect($token->nodes)->map(function (DOMNode $DOMNode) {
-                        return $DOMNode->ownerDocument->saveXML($DOMNode);
-                    })->join("\n")
-                ];
-            })[29]
-    );
-
-//    ray()->xml($dokumen_word->getWordXmlDomDocument()->saveXML());
-});
-
 Route::get("dokumen-word/{dokumen_word}/xml", function (DokumenWord $dokumen_word) {
     $path = $dokumen_word->getFirstMediaPath(DokumenWord::COLLECTION_WORD_FILE);
     $zipArchive = new \ZipArchive();
