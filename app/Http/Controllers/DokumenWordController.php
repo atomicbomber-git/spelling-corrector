@@ -50,6 +50,27 @@ class DokumenWordController extends Controller
         ]);
     }
 
+    public function filterOutShortTokens(Token $token): bool {
+        return mb_strlen($token->getNormalizedValue()) > 1;
+    }
+
+    public function filterOutNumerals(Token $token): bool {
+        $value = $token->getNormalizedValue();
+
+        /* Remove all punctuations and spaces so we can handle formatted numerals like 10 000 000 */
+        $value = preg_replace("/[\p{P}\p{Z}]/ui", "", $value);
+        return ! is_numeric($value);
+    }
+
+    private function filterTokensInSentences(Sentence $sentence): Sentence {
+        $sentence->tokens = collect($sentence->tokens)
+            ->filter([$this, "filterOutShortTokens"])
+            ->filter([$this, "filterOutNumerals"])
+            ->toArray();
+
+        return $sentence;
+    }
+
     public function show(Request $request, DokumenWord $dokumen_word)
     {
         if ($request->ajax()) {
@@ -59,21 +80,11 @@ class DokumenWordController extends Controller
             ]);
         }
 
-        debugbar()->disable();
-
         $tokenizer = new Tokenizer();
         $tokenizer->load($dokumen_word->getWordXmlDomDocument());
         $sentences = $tokenizer->tokenize();
 
-        collect($sentences)->transform(function (Sentence $sentence) {
-            $sentence->tokens = collect($sentence->tokens)
-                ->filter(function (Token $token) {
-                    return
-                        mb_strlen($token->getNormalizedValue()) > 1 &&
-                        !is_numeric($token->getNormalizedValue());
-                })
-                ->toArray();
-        });
+        $sentences = array_map([$this, "filterTokensInSentences"], $sentences);
 
         return $this->responseFactory->view("dokumen-word.show", [
             "dokumen_word" => $dokumen_word->makeHidden("konten_html"),
