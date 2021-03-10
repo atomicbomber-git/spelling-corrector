@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Constants\MessageState;
-use App\DocumentProcessing\WordAndComponentNodesPair;
-use App\DocumentProcessing\WordXmlProcessor;
 use App\DokumenWord;
 use App\DomDocumentNLPTools\Sentence;
 use App\DomDocumentNLPTools\Token;
@@ -12,9 +10,6 @@ use App\DomDocumentNLPTools\Tokenizer;
 use App\RecommendationEngine\WordRecommender;
 use App\Support\FileConverter;
 use App\Support\SessionHelper;
-use Barryvdh\Debugbar\LaravelDebugbar;
-use DebugBar\DebugBar;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -25,7 +20,6 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use NlpTools\Tokenizers\TokenizerInterface;
 use NlpTools\Tokenizers\WhitespaceTokenizer;
-use function Symfony\Component\String\s;
 
 class DokumenWordController extends Controller
 {
@@ -50,25 +44,18 @@ class DokumenWordController extends Controller
         ]);
     }
 
-    public function filterOutShortTokens(Token $token): bool {
+    public function filterOutShortTokens(Token $token): bool
+    {
         return mb_strlen($token->getNormalizedValue()) > 1;
     }
 
-    public function filterOutNumerals(Token $token): bool {
+    public function filterOutNumerals(Token $token): bool
+    {
         $value = $token->getNormalizedValue();
 
         /* Remove all punctuations and spaces so we can handle formatted numerals like 10 000 000 */
         $value = preg_replace("/[\p{P}\p{Z}]/ui", "", $value);
-        return ! is_numeric($value);
-    }
-
-    private function filterTokensInSentences(Sentence $sentence): Sentence {
-        $sentence->tokens = collect($sentence->tokens)
-            ->filter([$this, "filterOutShortTokens"])
-            ->filter([$this, "filterOutNumerals"])
-            ->toArray();
-
-        return $sentence;
+        return !is_numeric($value);
     }
 
     public function show(Request $request, DokumenWord $dokumen_word)
@@ -204,5 +191,15 @@ class DokumenWordController extends Controller
         );
 
         return $this->responseFactory->redirectToRoute("dokumen-word.index");
+    }
+
+    private function filterTokensInSentences(Sentence $sentence): Sentence
+    {
+        $sentence->tokens = collect($sentence->tokens)
+            ->filter([$this, "filterOutShortTokens"])
+            ->filter([$this, "filterOutNumerals"])
+            ->toArray();
+
+        return $sentence;
     }
 }
