@@ -6,7 +6,7 @@ namespace App\DomDocumentNLPTools;
 class Sentence {
     public string $value;
     public int $index;
-    /** @var array | Token[] */
+    /** @var array | Word[] */
     public array $tokens;
 
     public function __construct(string $value, int $index, array $tokens)

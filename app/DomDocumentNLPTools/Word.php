@@ -6,7 +6,7 @@ namespace App\DomDocumentNLPTools;
 use App\Support\StringUtil;
 use DOMNode;
 
-class Token {
+class Word {
     public string $rawValue;
     /** @var array | DOMNode[] */
     public array $nodes;

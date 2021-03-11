@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Constants\MessageState;
 use App\DokumenWord;
 use App\DomDocumentNLPTools\Sentence;
-use App\DomDocumentNLPTools\Token;
+use App\DomDocumentNLPTools\Word;
 use App\DomDocumentNLPTools\Tokenizer;
 use App\RecommendationEngine\WordRecommender;
 use App\Support\FileConverter;
@@ -44,12 +44,12 @@ class DokumenWordController extends Controller
         ]);
     }
 
-    public function filterOutShortTokens(Token $token): bool
+    public function filterOutShortTokens(Word $token): bool
     {
         return mb_strlen($token->getNormalizedValue()) > 1;
     }
 
-    public function filterOutNumerals(Token $token): bool
+    public function filterOutNumerals(Word $token): bool
     {
         $value = $token->getNormalizedValue();
 

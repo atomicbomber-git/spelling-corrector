@@ -8,210 +8,155 @@ use DOMNode;
 
 class Tokenizer
 {
-    private DOMDocument $document;
-    private string $textAccumulator = "";
+    public DOMDocument $document;
+    private array $words = [];
 
-    /** @var array | Token[] */
-    private array $tokens = [];
-    private int $tokenIndex = 0;
+    private string $currentLetter = "";
+    private ?DOMNode $currentLetterNode = null;
 
-    private ?DOMNode $prevLetterTextNode = null;
-
-    /** @var array | DOMNode[] */
-    private array $textNodeAccumulator = [];
-
-    private ?Token $prevMultiNodeToken = null;
-    private int $charIndex = 0;
-    private string $prevChar = "";
-    private string $currChar = "";
-    private int $multiNodeTokenLastNodeTextLength = 0;
-    private bool $hasEncounteredLetterInCurrentTextNode = false;
-
-    private int $sentenceIndex = 0;
-    private string $sentenceAccumulator = "";
-    /** @var array | Sentence[] */
-    private array $sentences = [];
-
-    private ?DOMNode $prevNode;
+    private string $letterAccumulator = "";
+    private array $letterNodeAccumulator = [];
+    private ?DOMNode $prevLetterNode = null;
+    private bool $newParagraphHandled = false;
+    private int $wordIndex = 0;
+    private ?DOMNode $currentParagraphNode = null;
     private bool $hasUnhandledLinebreak = false;
 
-    /** @var array | int */
-    private array $tokenPositionsInSentence = [];
-    private array $tokenPositionsInNode = [];
-    private int $textNodeIndex = 0;
-    private bool $squashNodes = false;
-    private int $prevCharIndex = 0;
+    private string $sentenceCharAccumulator = "";
+    private string $currentSentenceChar = "";
+    private string $prevSentenceChar = "";
+    private array $sentences = [];
+    private int $sentenceIndex = 0;
+    private array $wordNodeCounter = [];
+    private array $sentenceWordCounter = [];
+
+    private ?Word $previousMultiNodeWord = null;
+    private bool $squash = false;
+    private int $multiNodeWordLastNodeTextLength = 0;
+    private int $letterIndex = 0;
 
     public function load(DOMDocument $document)
     {
         $this->document = $document;
     }
 
-    public function tokenizeWithSquashing(): array
-    {
-        $this->squashNodes = true;
-        return $this->tokenize();
-    }
-
     public function tokenize(): array
     {
         $this->walk($this->document, function (DOMNode $node) {
             if ($node->nodeName === "w:p") {
-                $this->textAccumulator = "";
-                $this->textNodeAccumulator = [];
-                $this->sentenceAccumulator = "";
+                $this->currentParagraphNode = $node;
 
                 $this->walk($node, function (DOMNode $subNode) {
+                    if ($this->hasUnhandledLinebreak) {
+                        $this->saveWord();
+                        $this->saveSentence();
+                        $this->letterNodeAccumulator = [];
+                        $this->hasUnhandledLinebreak = false;
+                    }
+
                     if ($subNode->nodeName === "w:t") {
-                        $this->hasEncounteredLetterInCurrentTextNode = false;
+                        for ($i = 0; $i < mb_strlen($subNode->textContent); ++$i) {
+                            $this->letterIndex = $i;
+                            $currentChar = mb_substr($subNode->textContent, $i, 1);
+                            $this->currentSentenceChar = $currentChar;
 
-                        if ($this->textAccumulator === "") {
-                            $this->textNodeAccumulator = [$subNode];
-                        } else {
-                            $this->textNodeAccumulator[] = $subNode;
-                        }
+                            if (preg_match("/[^\p{Z}]/ui", $currentChar)) {
+                                $this->currentLetter = $currentChar;
+                                $this->currentLetterNode = $subNode;
 
-                        if ($this->hasUnhandledLinebreak) {
-                            $this->textNodeIndex--;
-                            $this->saveToken();
-                            $this->saveSentence();
-                            $this->textNodeIndex++;
-                            $this->hasUnhandledLinebreak = false;
-                        }
+                                if ($this->currentLetterNode !== $this->prevLetterNode) {
+                                    if (($this->letterAccumulator === "")) {
+                                        $this->letterNodeAccumulator = [];
+                                    }
 
-                        if ($this->squashNodes) {
-                            $this->squashNodesInPreviousMultiNodeToken();
-                        }
+                                    $this->letterNodeAccumulator[] = $this->currentLetterNode;
+                                }
 
-                        for ($this->charIndex = 0; $this->charIndex < mb_strlen($subNode->textContent); ++$this->charIndex) {
-                            $this->currChar = mb_substr($subNode->textContent, $this->charIndex, 1);
-
-                            /* Non-separators */
-                            if (preg_match("/[^\p{Z}]/ui", $this->currChar)) {
-                                $this->hasEncounteredLetterInCurrentTextNode = true;
-                                $this->textAccumulator .= $this->currChar;
-                                $this->prevLetterTextNode = $subNode;
-                            }
-                            else {
-                                $this->saveToken();
+                                $this->letterAccumulator .= $this->currentLetter;
+                                $this->prevLetterNode = $this->currentLetterNode;
+                                $this->newParagraphHandled = true;
+                            } else {
+                                $this->saveWord();
                             }
 
-                            if ($this->charIsSeparator($this->currChar) && ($this->prevChar === ".")) {
+                            $this->sentenceCharAccumulator .= $this->currentSentenceChar;
+
+                            if (($this->prevSentenceChar === ".") && ($this->currentSentenceChar === " ")) {
                                 $this->saveSentence();
                             }
 
-                            $this->sentenceAccumulator .= $this->currChar;
-                            $this->prevChar = $this->currChar;
-                            $this->prevCharIndex = $this->charIndex;
+                            $this->prevSentenceChar = $this->currentSentenceChar;
+                            $this->squash && $this->squashNodesInPreviousMultiNodeToken();
                         }
-
-                        ++$this->textNodeIndex;
                     } elseif ($subNode->nodeName === "w:br") {
                         $this->hasUnhandledLinebreak = true;
                     }
-                    $this->prevNode = $subNode;
                 });
 
-                $this->textNodeIndex--;
-                $this->saveToken();
-                $this->textNodeIndex++;
-
-                $this->squashNodes && $this->squashNodesInPreviousMultiNodeToken();
+                $this->saveWord();
+                $this->saveSentence();
+                $this->letterNodeAccumulator = [];
             }
-
-            $this->saveSentence();
         });
-
-        /* TODO: Hacky and ugly, find other solutions */
-        if ($this->squashNodes) {
-            $skips = [];
-            foreach ($this->sentences as $sentence) {
-                foreach ($sentence->tokens as $token) {
-                    $value = $token->getNormalizedValue();
-                    $hash = spl_object_hash($token->nodes[0]);
-
-                    $skips[$value][$hash] ??= 0;
-                    $token->posInNode = $skips[$value][$hash];
-                    ++$skips[$value][$hash];
-                }
-            }
-        }
 
         return $this->sentences;
     }
 
-    private function walk(DOMNode $node, callable $callable)
+    public function tokenizeWithSquashing(): array
     {
-        $callable($node);
+        $this->squash = true;
+        return $this->tokenize();
+    }
+
+    private function walk(DOMNode $node, callable $callback)
+    {
+        $callback($node);
+
         foreach ($node->childNodes as $childNode) {
-            $this->walk($childNode, $callable);
+            $this->walk($childNode, $callback);
         }
     }
 
-    public function saveToken(): void
+    private function saveWord(): void
     {
-        if ($this->textAccumulator !== "") {
-            $nodesToBeSaved = $this->textNodeAccumulator;
-
-            if (!$this->hasEncounteredLetterInCurrentTextNode) {
-                $this->textNodeAccumulator = [array_pop($nodesToBeSaved)];
-            } else {
-                $this->textNodeAccumulator = [array_pop($this->textNodeAccumulator)];
-            }
-
-            $newToken = new Token($this->textAccumulator, $this->tokenIndex++, $nodesToBeSaved);
-            $newToken->posInSentence = $this->getAndIncrementTokenPositionInSentence($newToken->getNormalizedValue());
-            $textNodeIndex = $this->textNodeIndex - count($this->textNodeAccumulator) + 1;
-            $newToken->posInNode = $this->getAndIncrementTokenPositionInTextNode($textNodeIndex, $newToken->getNormalizedValue());
-
-            $this->tokens[] = $newToken;
-            $this->textAccumulator = "";
-
-            if (count($newToken->nodes) > 1) {
-                $this->prevMultiNodeToken = $newToken;
-                $this->multiNodeTokenLastNodeTextLength =
-                    $this->hasEncounteredLetterInCurrentTextNode ?
-                        $this->charIndex : ($this->prevCharIndex + 1);
-            }
-        }
-    }
-
-    private function getAndIncrementTokenPositionInSentence(string $normalizedTokenValue): int
-    {
-        $this->tokenPositionsInSentence[$normalizedTokenValue] ??= 0;
-        $pos = $this->tokenPositionsInSentence[$normalizedTokenValue];
-        ++$this->tokenPositionsInSentence[$normalizedTokenValue];
-        return $pos;
-    }
-
-    private function getAndIncrementTokenPositionInTextNode(int $textNodeIndex, string $normalizedTokenValue): int
-    {
-        $this->tokenPositionsInNode[$textNodeIndex][$normalizedTokenValue] ??= 0;
-        $pos = $this->tokenPositionsInNode[$textNodeIndex][$normalizedTokenValue];
-        ++$this->tokenPositionsInNode[$textNodeIndex][$normalizedTokenValue];
-        return $pos;
-    }
-
-    public function saveSentence(): void
-    {
-        if ($this->sentenceAccumulator !== "") {
-            $this->sentences[$this->sentenceIndex++] ??= new Sentence(
-                $this->sentenceAccumulator,
-                $this->sentenceIndex,
-                $this->tokens,
+        if ($this->letterAccumulator !== "") {
+            $word = new Word(
+                $this->letterAccumulator,
+                $this->wordIndex++,
+                $this->letterNodeAccumulator
             );
 
-            $this->tokens = [];
-            $this->sentenceAccumulator = "";
-            $this->tokenPositionsInSentence = [];
+            $word->posInNode = $this->getNextWordPosInNode($word);
+            $word->posInSentence = $this->getNextWordPosInSentence($word);
+            $this->words[] = $word ;
+
+            if (count($this->letterNodeAccumulator) > 1) {
+                $this->letterNodeAccumulator = [array_pop($this->letterNodeAccumulator)];
+                $this->previousMultiNodeWord = $word;
+                $this->multiNodeWordLastNodeTextLength = $this->letterIndex;
+            }
+
+            $this->letterAccumulator = "";
         }
     }
 
-    public function squashNodesInPreviousMultiNodeToken(): void
+    private function saveSentence(): void
     {
-        if ($this->prevMultiNodeToken !== null) {
+        $this->sentences[] = new Sentence(
+            $this->sentenceCharAccumulator,
+            $this->sentenceIndex++,
+            $this->words
+        );
+
+        $this->words = [];
+        $this->sentenceCharAccumulator = "";
+    }
+
+    private function squashNodesInPreviousMultiNodeToken(): void
+    {
+        if ($this->previousMultiNodeWord !== null) {
             $textAccumulator = "";
-            $domNodes = $this->prevMultiNodeToken->nodes;
+            $domNodes = $this->previousMultiNodeWord->nodes;
             $lastDomNode = $domNodes[array_key_last($domNodes)];
             $firstDomNode = $domNodes[array_key_first($domNodes)];
 
@@ -222,21 +167,29 @@ class Tokenizer
                 }
             }
 
-            $textAccumulator .= mb_substr($lastDomNode->textContent, 0, $this->multiNodeTokenLastNodeTextLength);
-            $lastDomNode->textContent = mb_substr($lastDomNode->textContent, $this->multiNodeTokenLastNodeTextLength);
+            $textAccumulator .= mb_substr($lastDomNode->textContent, 0, $this->multiNodeWordLastNodeTextLength);
+            $lastDomNode->textContent = mb_substr($lastDomNode->textContent, $this->multiNodeWordLastNodeTextLength);
             $firstDomNode->textContent .= $textAccumulator;
 
             if (mb_strlen($lastDomNode->textContent) === 0) {
                 $lastDomNode->parentNode->removeChild($lastDomNode);
             }
 
-            $this->prevMultiNodeToken->nodes = [$firstDomNode];
-            $this->prevMultiNodeToken = null;
+            $this->previousMultiNodeWord->nodes = [$firstDomNode];
+            $this->previousMultiNodeWord = null;
         }
     }
 
-    public function charIsSeparator(string $char): bool
+    private function getNextWordPosInNode(Word $word)
     {
-        return (preg_match("/[\p{Z}]/ui", $char) > 0);
+        $hash = spl_object_hash($this->letterNodeAccumulator[0]);
+        $this->wordNodeCounter[$word->getNormalizedValue()][$hash] ??= 0;
+        return $this->wordNodeCounter[$word->getNormalizedValue()][$hash]++;
+    }
+
+    private function getNextWordPosInSentence(Word $word): int
+    {
+        $this->sentenceWordCounter[$word->getNormalizedValue()] ??= 0;
+        return $this->sentenceWordCounter[$word->getNormalizedValue()]++;
     }
 }
