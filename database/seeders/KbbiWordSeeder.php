@@ -18,7 +18,7 @@ class KbbiWordSeeder extends Seeder
 
         $wordList = [];
         while (($line = fgetcsv($fileHandle)) !== false) {
-            $wordList["teks"] = $line[0];
+            $wordList[] = ["teks" => $line[0]];
         }
 
         fclose($fileHandle);
