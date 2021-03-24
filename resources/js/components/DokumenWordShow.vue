@@ -233,10 +233,10 @@ export default {
     sentenceHtml(errorToken, errorPosition) {
       let counter = 0
       let wordInSentence = null
+      
       let regexPattern = `(?<=[\\s,.:;"'()]|^)${escapeRegExp(errorToken)}(?=[\\s,.:;"'()]|$)`
       let matches = errorPosition.sentence.matchAll(new RegExp(regexPattern, "ugi"))
-
-      for (let match of matches) {
+        for (let match of matches) {
         if (errorPosition.wordPosInSentence === counter) {
           wordInSentence = match
           break

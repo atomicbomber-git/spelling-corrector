@@ -27,10 +27,10 @@ class WordRecommender
         $recommendations = [];
 
         foreach ($sentences as $sentence) {
-            foreach ($sentence->tokens as $index => $token) {
+            foreach ($sentence->words as $index => $token) {
                 $word = $token->getNormalizedValue();
-                $wordBefore = optional($sentence->tokens[$index - 1] ?? null)->getNormalizedValue();
-                $wordAfter = optional($sentence->tokens[$index + 1] ?? null)->getNormalizedValue();
+                $wordBefore = optional($sentence->words[$index - 1] ?? null)->getNormalizedValue();
+                $wordAfter = optional($sentence->words[$index + 1] ?? null)->getNormalizedValue();
 
                 if (!in_array($word, $dictionary)) {
                     $recommendations[] = [

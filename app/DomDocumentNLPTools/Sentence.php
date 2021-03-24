@@ -7,12 +7,12 @@ class Sentence {
     public string $value;
     public int $index;
     /** @var array | Word[] */
-    public array $tokens;
+    public array $words;
 
-    public function __construct(string $value, int $index, array $tokens)
+    public function __construct(string $value, int $index, array $words)
     {
         $this->value = $value;
         $this->index = $index;
-        $this->tokens = $tokens;
+        $this->words = $words;
     }
 }

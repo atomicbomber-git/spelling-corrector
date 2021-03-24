@@ -195,7 +195,7 @@ class DokumenWordController extends Controller
 
     private function filterTokensInSentences(Sentence $sentence): Sentence
     {
-        $sentence->tokens = collect($sentence->tokens)
+        $sentence->words = collect($sentence->words)
             ->filter([$this, "filterOutShortTokens"])
             ->filter([$this, "filterOutNumerals"])
             ->toArray();

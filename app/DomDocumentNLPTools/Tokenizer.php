@@ -102,6 +102,9 @@ class Tokenizer
         return $this->sentences;
     }
 
+    /**
+     * @return array | Sentence[]
+     */
     public function tokenizeWithSquashing(): array
     {
         $this->squash = true;
@@ -150,6 +153,7 @@ class Tokenizer
 
         $this->words = [];
         $this->sentenceCharAccumulator = "";
+        $this->sentenceWordCounter = [];
     }
 
     private function squashNodesInPreviousMultiNodeToken(): void
