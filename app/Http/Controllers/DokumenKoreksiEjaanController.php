@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\DocumentProcessing\SubstitutionList;
 use App\DokumenWord;
+use App\DomDocumentNLPTools\OldTokenizer;
 use App\DomDocumentNLPTools\Tokenizer;
 use App\Support\FileConverter;
 use DOMDocument;
@@ -16,9 +17,9 @@ use ZipArchive;
 class DokumenKoreksiEjaanController extends Controller
 {
     private ResponseFactory $responseFactory;
-    private Tokenizer $tokenizer;
+    private OldTokenizer $tokenizer;
 
-    public function __construct(ResponseFactory $responseFactory, Tokenizer $tokenizer)
+    public function __construct(ResponseFactory $responseFactory, OldTokenizer $tokenizer)
     {
         $this->responseFactory = $responseFactory;
         $this->tokenizer = $tokenizer;

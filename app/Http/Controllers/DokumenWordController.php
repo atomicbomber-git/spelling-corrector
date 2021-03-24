@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Constants\MessageState;
 use App\DokumenWord;
+use App\DomDocumentNLPTools\OldTokenizer;
 use App\DomDocumentNLPTools\Sentence;
 use App\DomDocumentNLPTools\Word;
 use App\DomDocumentNLPTools\Tokenizer;
@@ -67,7 +68,7 @@ class DokumenWordController extends Controller
             ]);
         }
 
-        $tokenizer = new Tokenizer();
+        $tokenizer = new OldTokenizer();
         $tokenizer->load($dokumen_word->getWordXmlDomDocument());
         $sentences = $tokenizer->tokenize();
 
