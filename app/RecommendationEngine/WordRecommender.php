@@ -51,7 +51,6 @@ class WordRecommender
 
     public function getRankedRecommendations(string $word, ?string $wordBefore, ?string $wordAfter, int $maxRecommendation): array
     {
-
         $mostSimilarWords = $this->getMostSimilarWords($word, self::MAX_INTERNAL_LIMIT);
 
         $preBigramFrequencies = FrekuensiBigram::query()
@@ -94,7 +93,7 @@ class WordRecommender
             SimilaritasJaroWinkler::query()
                 ->insertOrIgnore(
                     $results->map(function ($similarity, $text) use ($word) {
-                        [$wordA, $wordB] = collect([$word, $text])->sort()->toArray();
+                        [$wordA, $wordB] = [$word, $text];
                         return [
                             "word_a" => $wordA,
                             "word_b" => $wordB,

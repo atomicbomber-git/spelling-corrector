@@ -61,7 +61,7 @@ class DokumenKoreksiEjaanController extends Controller
         if ($zipResource === true) {
             $domDocument = new DOMDocument();
             $domDocument->loadXML($zipArchive->getFromName($pathToDocumentInsideZip));
-            $newDocument = $this->substituteWordsInDomDocument($domDocument, $substitutionList);
+            $newDocument = self::substituteWordsInDomDocument($domDocument, $this->tokenizer, $substitutionList);
 
 
             $zipArchive->deleteName($pathToDocumentInsideZip);
@@ -78,11 +78,11 @@ class DokumenKoreksiEjaanController extends Controller
         return $this->responseFactory->noContent(200);
     }
 
-    public function substituteWordsInDomDocument(DOMDocument $domDocument, SubstitutionList $substitutionList)
+    public static function substituteWordsInDomDocument(DOMDocument $domDocument, OldTokenizer $tokenizer, SubstitutionList $substitutionList)
     {
         /* Obtain all words inside the dom document */
-        $this->tokenizer->load($domDocument);
-        $sentences = $this->tokenizer->tokenizeWithSquashing();
+        $tokenizer->load($domDocument);
+        $sentences = $tokenizer->tokenizeWithSquashing();
 
         /* How often has a particular word value been replaced in a domNode? */
         $wordValueDomNodeSubCounter = [];

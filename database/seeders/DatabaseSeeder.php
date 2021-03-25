@@ -17,5 +17,6 @@ class DatabaseSeeder extends Seeder
         $this->call(MahasiswaSeeder::class);
         $this->call(NgramAndWordSeeder::class);
         $this->call(KbbiWordSeeder::class);
+        $this->call(SimilaritasSeeder::class);
     }
 }
