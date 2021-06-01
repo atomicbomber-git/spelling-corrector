@@ -47,7 +47,7 @@ class WordRecommender
                 }
             }
         }
-
+W
         return $recommendations;
     }
 
