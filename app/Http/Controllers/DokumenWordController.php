@@ -7,7 +7,6 @@ use App\DokumenWord;
 use App\DomDocumentNLPTools\OldTokenizer;
 use App\DomDocumentNLPTools\Sentence;
 use App\DomDocumentNLPTools\Word;
-use App\DomDocumentNLPTools\Tokenizer;
 use App\RecommendationEngine\WordRecommender;
 use App\Support\FileConverter;
 use App\Support\SessionHelper;
@@ -50,18 +49,14 @@ class DokumenWordController extends Controller
         return mb_strlen($token->getNormalizedValue()) > 1;
     }
 
-    public function filterOutNumerals(Word $token): bool
+    public function filterOutTokensWithNonLetters(Word $token): bool
     {
-        $value = $token->getNormalizedValue();
-
-        /* Remove all punctuations and spaces so we can handle formatted numerals like 10 000 000 */
-        $value = preg_replace("/[\p{P}\p{Z}]/ui", "", $value);
-        return !is_numeric($value);
+        return preg_match_all("/[^\p{L}]/", $token->getNormalizedValue()) === 0;
     }
 
     public function show(Request $request, DokumenWord $dokumen_word)
     {
-        if ($request->ajax()) {
+        if ($request->wantsJson()) {
             return $this->responseFactory->json([
                 "nama" => $dokumen_word->nama,
                 "konten_html" => $dokumen_word->getHtml()
@@ -73,6 +68,11 @@ class DokumenWordController extends Controller
         $sentences = $tokenizer->tokenize();
 
         $sentences = array_map([$this, "filterTokensInSentences"], $sentences);
+
+        $sentences = array_values(array_filter($sentences, function (Sentence $sentence) {
+            return count($sentence->words) > 0;
+        }));
+
 
         return $this->responseFactory->view("dokumen-word.show", [
             "dokumen_word" => $dokumen_word->makeHidden("konten_html"),
@@ -198,7 +198,8 @@ class DokumenWordController extends Controller
     {
         $sentence->words = collect($sentence->words)
             ->filter([$this, "filterOutShortTokens"])
-            ->filter([$this, "filterOutNumerals"])
+            ->filter([$this, "filterOutTokensWithNonLetters"])
+            ->values()
             ->toArray();
 
         return $sentence;
