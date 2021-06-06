@@ -8,6 +8,7 @@ use App\DomDocumentNLPTools\Sentence;
 use App\FrekuensiBigram;
 use App\Kata;
 use App\SimilaritasJaroWinkler;
+use DB;
 
 class WordRecommender
 {
@@ -74,23 +75,35 @@ class WordRecommender
         return array_slice($mostSimilarWords, 0, $maxRecommendation);
     }
 
-    private function getMostSimilarWords(string $word, int $limit): array
+    public function getMostSimilarWords(string $word, int $limit): array
     {
         $results = SimilaritasJaroWinkler::query()
             ->where("word_a", $word)
+            ->where("panjang_word_a", ">=", mb_strlen($word) - 3)
+            ->where("panjang_word_a", "<=", mb_strlen($word) + 3)
             ->orderByDesc("similaritas")
             ->limit($limit)
-            ->pluck("similaritas", "word_b");
+            ->get();
+
+        $results = $results->pluck("similaritas", "word_b");
 
         if ($results->isEmpty()) {
             $results = Kata::query()
-                ->select("teks")
+                ->select("teks", "panjang_teks")
+
+                ->where("panjang_teks", ">=", mb_strlen($word) - 3)
+                ->where("panjang_teks", "<=", mb_strlen($word) + 3)
+
                 ->selectRaw("jaro_winkler_similarity(?, teks) AS similaritas", [$word])
                 ->orderByRaw("jaro_winkler_similarity(?, teks) DESC", [$word])
                 ->limit($limit)
-                ->pluck("similaritas", "teks");
+                ->get();
 
-            SimilaritasJaroWinkler::query()
+
+            $results = $results->pluck("similaritas", "teks");
+
+            
+            $x = SimilaritasJaroWinkler::query()
                 ->insertOrIgnore(
                     $results->map(function ($similarity, $text) use ($word) {
                         [$wordA, $wordB] = [$word, $text];
@@ -101,6 +114,7 @@ class WordRecommender
                         ];
                     })->toArray()
                 );
+
         }
 
         return $results->toArray();

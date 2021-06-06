@@ -16,41 +16,6 @@ class WordRecommender
 {
     const MAX_INTERNAL_LIMIT = 200;
 
-    /**
-     * @param array | Sentence[] $sentences
-     * @param int $maxRecommendation
-     * @return array
-     */
-    public function getRecommendations(array $sentences, $maxRecommendation = 5): array
-    {
-        $dictionary = Kata::query()
-            ->pluck("teks")
-            ->toArray();
-
-        $recommendations = [];
-
-        foreach ($sentences as $sentence) {
-            foreach ($sentence->words as $index => $token) {
-                $word = $token->getNormalizedValue();
-                $wordBefore = optional($sentence->words[$index - 1] ?? null)->getNormalizedValue();
-                $wordAfter = optional($sentence->words[$index + 1] ?? null)->getNormalizedValue();
-
-                if (!in_array($word, $dictionary)) {
-                    $recommendations[$token->index] = [
-                        "token" => $token->rawValue,
-                        "token_index" => $token->index,
-                        "pos_in_sentence" => $token->posInSentence,
-                        "sentence" => $sentence->value,
-                        "sentence_index" => $sentence->index,
-                        "recommendations" => $this->getRankedRecommendations($word, $wordBefore, $wordAfter, $maxRecommendation)
-                    ];
-                }
-            }
-        }
-W
-        return $recommendations;
-    }
-
     public function getRankedRecommendations(string $word, ?string $wordBefore, ?string $wordAfter, int $maxRecommendation): array
     {
         $mostSimilarWords = $this->getMostSimilarWords($word, self::MAX_INTERNAL_LIMIT);

@@ -18,19 +18,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use NlpTools\Tokenizers\TokenizerInterface;
-use NlpTools\Tokenizers\WhitespaceTokenizer;
-
 class DokumenWordController extends Controller
 {
     private ResponseFactory $responseFactory;
-    private TokenizerInterface $tokenizer;
 
     public function __construct(ResponseFactory $responseFactory)
     {
         $this->middleware("auth");
         $this->responseFactory = $responseFactory;
-        $this->tokenizer = new WhitespaceTokenizer();
     }
 
     public function index(): Response
